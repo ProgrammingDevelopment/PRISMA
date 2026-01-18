@@ -102,8 +102,3 @@ The platform integrates with **SerpAPI** using the provided key. The search func
 *   **SEO**: Optimized metadata, Open Graph tags.
 *   **Performance**: Server-Side Rendering (SSR) and Static Site Generation (SSG) for fast load times.
 *   **Security**: API routes hide sensitive keys (Server-side execution).
-
-## Contact
-
-*   **WhatsApp**: +62 878-7200-4448
-*   **Email**: rerryadusundaru12@gmail.com

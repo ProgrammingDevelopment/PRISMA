@@ -53,8 +53,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# lib/  <-- Removed to prevent ignoring src/lib
+# lib64/ <-- Removed
 parts/
 sdist/
 var/

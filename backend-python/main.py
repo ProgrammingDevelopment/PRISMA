@@ -10,6 +10,8 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGener
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
+from typing import Optional
+from ml_utils import ml_classifier
 
 # --- 1. SETUP & CONFIGURATION ---
 load_dotenv()
@@ -67,13 +69,20 @@ def initialize_rag():
 @app.on_event("startup")
 async def startup_event():
     initialize_rag()
+    ml_classifier.train()
 
 # --- 3. RETRIEVAL & GENERATION LOGIC ---
 class ChatRequest(BaseModel):
     message: str
 
+class Action(BaseModel):
+    label: str
+    type: str  # "navigate" | "link"
+    value: str
+
 class ChatResponse(BaseModel):
     reply: str
+    action: Optional[Action] = None
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
@@ -117,7 +126,20 @@ async def chat_endpoint(request: ChatRequest):
             response = fallback_chain.invoke({"input": user_query, "context": "No local documents available."})
             reply_text = response.content
 
-        return ChatResponse(reply=reply_text)
+        # --- ML INTENT CLASSIFICATION & ACTION ---
+        intent = ml_classifier.predict(user_query)
+        action = None
+        
+        if intent == "admin":
+            action = Action(label="Buka Layanan Surat", type="navigate", value="/#admin")
+        elif intent == "finance":
+            action = Action(label="Buka Keuangan", type="navigate", value="/#finance")
+        elif intent == "report":
+            action = Action(label="Buka Form Pengaduan", type="navigate", value="/#response")
+        elif intent == "contact":
+            action = Action(label="Chat WA Pengurus", type="link", value="https://wa.me/6287872004448")
+        
+        return ChatResponse(reply=reply_text, action=action)
 
     except Exception as e:
         print(f"Error processing chat: {e}")

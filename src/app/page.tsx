@@ -2,6 +2,7 @@ import { HeroCarousel } from "@/components/home/hero-carousel"
 import { ContactSection } from "@/components/home/contact-section"
 import { FeatureCatalogue } from "@/components/home/feature-catalogue"
 import { AdministrationHub } from "@/components/home/administration-hub"
+import AiDecisionHub from "@/components/AiDecisionHub"
 
 export default function Home() {
   return (
@@ -11,6 +12,8 @@ export default function Home() {
       <FeatureCatalogue />
 
       <AdministrationHub />
+
+      <AiDecisionHub />
 
       {/* About Section - Keeping as requested but slightly modified to fit new flow if needed, 
            or just removing if the new sections replace it. The prompt asked to DESIGN the specific sections.

@@ -38,7 +38,7 @@ export function Navbar() {
                         </Link>
 
                         <DropdownMenu>
-                            <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary outline-none">
+                            <DropdownMenuTrigger id="radix-id-1" className="flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary outline-none">
                                 Layanan Digital <ChevronDown className="h-4 w-4" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
@@ -58,7 +58,7 @@ export function Navbar() {
                         </DropdownMenu>
 
                         <DropdownMenu>
-                            <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary outline-none">
+                            <DropdownMenuTrigger id="radix-id-2" className="flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary outline-none">
                                 Respons & Keamanan <ChevronDown className="h-4 w-4" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">

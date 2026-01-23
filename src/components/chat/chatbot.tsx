@@ -57,52 +57,45 @@ export function Chatbot() {
 
         try {
             // 2. Call Python API (Proxied/Rewritten)
-            const res = await fetch("/api/chat", {
+            const chatApiUrl = process.env.NEXT_PUBLIC_CHAT_API_URL || "/api/chat";
+            const res = await fetch(chatApiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: text }),
             })
 
-            let replyText = ""
             if (res.ok) {
                 const data = await res.json()
-                replyText = data.reply
+                const replyText = data.reply
+                const backendAction = data.action
+
+                let action: Message["action"] = undefined
+
+                if (backendAction) {
+                    if (backendAction.type === 'navigate') {
+                        action = {
+                            label: backendAction.label,
+                            onClick: () => router.push(backendAction.value)
+                        }
+                    } else if (backendAction.type === 'link') {
+                        action = {
+                            label: backendAction.label,
+                            href: backendAction.value
+                        }
+                    }
+                }
+
+                setMessages(prev => [...prev, {
+                    role: "bot",
+                    content: replyText,
+                    action: action
+                }])
             } else {
-                replyText = "Maaf, sistem sedang sibuk. Silahkan coba lagi nanti."
+                setMessages(prev => [...prev, {
+                    role: "bot",
+                    content: "Maaf, sistem sedang sibuk. Silahkan coba lagi nanti."
+                }])
             }
-
-            // 3. Client-Side Enrichment (Actions) based on Keywords
-            // We use the AI text response, but we add "Actions" based on simple keyword matching from USER input or AI response context
-            const lowerInput = text.toLowerCase()
-            let action: Message["action"] = undefined
-
-            if (lowerInput.includes("surat") || lowerInput.includes("ktp") || lowerInput.includes("kk")) {
-                action = {
-                    label: "Buka Layanan Surat",
-                    onClick: () => router.push("/#admin") // Section ID
-                }
-            } else if (lowerInput.includes("iuran") || lowerInput.includes("uang") || lowerInput.includes("bayar")) {
-                action = {
-                    label: "Buka Keuangan",
-                    onClick: () => router.push("/#finance")
-                }
-            } else if (lowerInput.includes("lapor") || lowerInput.includes("darurat")) {
-                action = {
-                    label: "Buka Form Pengaduan",
-                    onClick: () => router.push("/#response")
-                }
-            } else if (lowerInput.includes("hubungi") || lowerInput.includes("rt")) {
-                action = {
-                    label: "Chat WA Pengurus",
-                    href: "https://wa.me/6287872004448"
-                }
-            }
-
-            setMessages(prev => [...prev, {
-                role: "bot",
-                content: replyText,
-                action: action
-            }])
 
         } catch (error) {
             setMessages(prev => [...prev, {

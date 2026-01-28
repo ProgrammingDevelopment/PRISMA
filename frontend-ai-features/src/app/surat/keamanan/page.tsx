@@ -1,0 +1,522 @@
+"use client"
+
+import { useState, useEffect, FormEvent } from "react"
+import Link from "next/link"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import {
+    ArrowLeft,
+    Shield,
+    AlertTriangle,
+    Phone,
+    User,
+    MapPin,
+    Calendar,
+    Clock,
+    FileText,
+    Lock,
+    CheckCircle,
+    Send,
+    Eye,
+    EyeOff,
+    Info
+} from "lucide-react"
+
+interface IncidentType {
+    id: string;
+    label: string;
+    priority: string;
+}
+
+export default function LaporanKeamananPage() {
+    const [incidentTypes, setIncidentTypes] = useState<IncidentType[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+    const [reportId, setReportId] = useState<string | null>(null);
+    const [showPhone, setShowPhone] = useState(false);
+
+    // Form state
+    const [formData, setFormData] = useState({
+        kronologi: '',
+        tanggal_kejadian: '',
+        waktu_kejadian: '',
+        lokasi: '',
+        nama_pelapor: '',
+        telepon_pelapor: '',
+        jenis_kejadian: '',
+    });
+
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        async function fetchIncidentTypes() {
+            try {
+                const response = await fetch('/api/database/keamanan?type=types');
+                const data = await response.json();
+                if (data.success) {
+                    setIncidentTypes(data.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch incident types:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchIncidentTypes();
+    }, []);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+
+        // Clear error when user types
+        if (errors[name]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+    };
+
+    const validateForm = (): boolean => {
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.kronologi.trim()) {
+            newErrors.kronologi = 'Kronologi kejadian wajib diisi';
+        } else if (formData.kronologi.length < 20) {
+            newErrors.kronologi = 'Kronologi harus minimal 20 karakter';
+        } else if (formData.kronologi.length > 5000) {
+            newErrors.kronologi = 'Kronologi maksimal 5000 karakter';
+        }
+
+        if (!formData.tanggal_kejadian) {
+            newErrors.tanggal_kejadian = 'Tanggal kejadian wajib diisi';
+        }
+
+        if (!formData.nama_pelapor.trim()) {
+            newErrors.nama_pelapor = 'Nama pelapor wajib diisi';
+        }
+
+        if (!formData.telepon_pelapor.trim()) {
+            newErrors.telepon_pelapor = 'Nomor telepon wajib diisi';
+        } else {
+            // Indonesian phone number validation
+            const phoneRegex = /^(08|\+?628)\d{8,11}$/;
+            const cleaned = formData.telepon_pelapor.replace(/\D/g, '');
+            if (!phoneRegex.test(cleaned) && !phoneRegex.test('+62' + cleaned.slice(1))) {
+                newErrors.telepon_pelapor = 'Format nomor telepon tidak valid (contoh: 08123456789)';
+            }
+        }
+
+        if (!formData.jenis_kejadian) {
+            newErrors.jenis_kejadian = 'Jenis kejadian wajib dipilih';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+
+        if (!validateForm()) {
+            return;
+        }
+
+        setSubmitting(true);
+
+        try {
+            const response = await fetch('/api/database/keamanan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setSubmitted(true);
+                setReportId(data.reportId);
+            } else {
+                setErrors({ submit: data.error || 'Gagal mengirim laporan' });
+            }
+        } catch (error) {
+            setErrors({ submit: 'Terjadi kesalahan. Silakan coba lagi.' });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'critical': return 'bg-red-600';
+            case 'high': return 'bg-orange-500';
+            case 'medium': return 'bg-yellow-500';
+            default: return 'bg-blue-500';
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+            </div>
+        );
+    }
+
+    if (submitted) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 py-8">
+                <div className="container mx-auto px-4 max-w-2xl">
+                    <Card className="bg-white/5 backdrop-blur-sm border-green-500/30">
+                        <CardContent className="p-8 text-center">
+                            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <CheckCircle className="h-10 w-10 text-green-400" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-white mb-2">Laporan Berhasil Dikirim</h2>
+                            <p className="text-gray-400 mb-4">
+                                Laporan keamanan Anda telah diterima dan akan segera ditindaklanjuti oleh tim keamanan RT.
+                            </p>
+                            <div className="bg-white/5 rounded-lg p-4 mb-6">
+                                <div className="text-sm text-gray-400">ID Laporan</div>
+                                <div className="text-lg font-mono text-green-400">{reportId}</div>
+                            </div>
+                            <div className="flex items-center justify-center gap-2 text-sm text-gray-400 mb-6">
+                                <Lock className="h-4 w-4" />
+                                <span>Data Anda dilindungi dengan enkripsi bcrypt</span>
+                            </div>
+                            <div className="flex gap-4 justify-center">
+                                <Button asChild className="bg-green-600 hover:bg-green-700">
+                                    <Link href="/">Kembali ke Beranda</Link>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="border-white/20 text-white hover:bg-white/10"
+                                    onClick={() => {
+                                        setSubmitted(false);
+                                        setFormData({
+                                            kronologi: '',
+                                            tanggal_kejadian: '',
+                                            waktu_kejadian: '',
+                                            lokasi: '',
+                                            nama_pelapor: '',
+                                            telepon_pelapor: '',
+                                            jenis_kejadian: '',
+                                        });
+                                    }}
+                                >
+                                    Buat Laporan Baru
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900 py-8">
+            <div className="container mx-auto px-4 max-w-4xl">
+                {/* Header */}
+                <div className="flex items-center gap-4 mb-8">
+                    <Button variant="outline" asChild className="border-white/20 text-white hover:bg-white/10">
+                        <Link href="/surat">
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Kembali
+                        </Link>
+                    </Button>
+                    <div>
+                        <h1 className="text-3xl font-bold text-white">Laporan Keamanan</h1>
+                        <p className="text-red-200">Laporkan kejadian keamanan di lingkungan RT</p>
+                    </div>
+                </div>
+
+                {/* Security Info Banner */}
+                <Card className="bg-gradient-to-r from-blue-900/50 to-cyan-900/50 border-blue-500/30 mb-8">
+                    <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-blue-500/20 rounded-lg">
+                                <Lock className="h-6 w-6 text-blue-400" />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-semibold text-white">Keamanan Data Terjamin</h4>
+                                <p className="text-sm text-blue-200">
+                                    Data Anda dilindungi dengan enkripsi bcrypt, OWASP Web Security, proteksi OSINT, dan pencegahan XSS injection.
+                                </p>
+                            </div>
+                            <div className="hidden md:flex gap-2">
+                                <span className="px-2 py-1 bg-blue-500/20 rounded text-xs text-blue-300">bcrypt</span>
+                                <span className="px-2 py-1 bg-green-500/20 rounded text-xs text-green-300">OWASP</span>
+                                <span className="px-2 py-1 bg-purple-500/20 rounded text-xs text-purple-300">Anti-XSS</span>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <div className="grid lg:grid-cols-3 gap-8">
+                    {/* Form - Left Column */}
+                    <div className="lg:col-span-2">
+                        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+                            <CardHeader>
+                                <CardTitle className="text-white flex items-center gap-2">
+                                    <FileText className="h-5 w-5 text-red-400" />
+                                    Form Laporan Keamanan
+                                </CardTitle>
+                                <CardDescription className="text-gray-400">
+                                    Isi form berikut dengan lengkap dan jelas
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    {/* Jenis Kejadian */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-white mb-2">
+                                            <AlertTriangle className="inline h-4 w-4 mr-1 text-red-400" />
+                                            Jenis Kejadian <span className="text-red-400">*</span>
+                                        </label>
+                                        <select
+                                            name="jenis_kejadian"
+                                            value={formData.jenis_kejadian}
+                                            onChange={handleInputChange}
+                                            className={`w-full px-4 py-3 bg-white/10 border ${errors.jenis_kejadian ? 'border-red-500' : 'border-white/20'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500`}
+                                        >
+                                            <option value="" className="bg-slate-800">Pilih jenis kejadian...</option>
+                                            {incidentTypes.map((type) => (
+                                                <option key={type.id} value={type.id} className="bg-slate-800">
+                                                    {type.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {errors.jenis_kejadian && (
+                                            <p className="text-red-400 text-sm mt-1">{errors.jenis_kejadian}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Kronologi */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-white mb-2">
+                                            <FileText className="inline h-4 w-4 mr-1 text-red-400" />
+                                            Kronologi Kejadian <span className="text-red-400">*</span>
+                                        </label>
+                                        <textarea
+                                            name="kronologi"
+                                            value={formData.kronologi}
+                                            onChange={handleInputChange}
+                                            rows={6}
+                                            placeholder="Ceritakan secara detail apa yang terjadi, kapan, dan bagaimana..."
+                                            className={`w-full px-4 py-3 bg-white/10 border ${errors.kronologi ? 'border-red-500' : 'border-white/20'} rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none`}
+                                        />
+                                        <div className="flex justify-between mt-1">
+                                            {errors.kronologi ? (
+                                                <p className="text-red-400 text-sm">{errors.kronologi}</p>
+                                            ) : (
+                                                <p className="text-gray-500 text-sm">Minimal 20 karakter</p>
+                                            )}
+                                            <p className="text-gray-500 text-sm">{formData.kronologi.length}/5000</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Date and Time */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-white mb-2">
+                                                <Calendar className="inline h-4 w-4 mr-1 text-red-400" />
+                                                Tanggal Kejadian <span className="text-red-400">*</span>
+                                            </label>
+                                            <input
+                                                type="date"
+                                                name="tanggal_kejadian"
+                                                value={formData.tanggal_kejadian}
+                                                onChange={handleInputChange}
+                                                className={`w-full px-4 py-3 bg-white/10 border ${errors.tanggal_kejadian ? 'border-red-500' : 'border-white/20'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500`}
+                                            />
+                                            {errors.tanggal_kejadian && (
+                                                <p className="text-red-400 text-sm mt-1">{errors.tanggal_kejadian}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-white mb-2">
+                                                <Clock className="inline h-4 w-4 mr-1 text-gray-400" />
+                                                Waktu Kejadian
+                                            </label>
+                                            <input
+                                                type="time"
+                                                name="waktu_kejadian"
+                                                value={formData.waktu_kejadian}
+                                                onChange={handleInputChange}
+                                                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Lokasi */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-white mb-2">
+                                            <MapPin className="inline h-4 w-4 mr-1 text-gray-400" />
+                                            Lokasi Kejadian
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="lokasi"
+                                            value={formData.lokasi}
+                                            onChange={handleInputChange}
+                                            placeholder="Contoh: Blok A depan rumah No. 5"
+                                            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                        />
+                                    </div>
+
+                                    {/* Contact Info */}
+                                    <div className="border-t border-white/10 pt-6">
+                                        <h4 className="text-lg font-semibold text-white mb-4">Informasi Pelapor</h4>
+
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-white mb-2">
+                                                    <User className="inline h-4 w-4 mr-1 text-red-400" />
+                                                    Nama Pelapor <span className="text-red-400">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="nama_pelapor"
+                                                    value={formData.nama_pelapor}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Nama lengkap Anda"
+                                                    className={`w-full px-4 py-3 bg-white/10 border ${errors.nama_pelapor ? 'border-red-500' : 'border-white/20'} rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500`}
+                                                />
+                                                {errors.nama_pelapor && (
+                                                    <p className="text-red-400 text-sm mt-1">{errors.nama_pelapor}</p>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-white mb-2">
+                                                    <Phone className="inline h-4 w-4 mr-1 text-red-400" />
+                                                    No. Telepon <span className="text-red-400">*</span>
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        type={showPhone ? "text" : "password"}
+                                                        name="telepon_pelapor"
+                                                        value={formData.telepon_pelapor}
+                                                        onChange={handleInputChange}
+                                                        placeholder="08123456789"
+                                                        className={`w-full px-4 py-3 pr-10 bg-white/10 border ${errors.telepon_pelapor ? 'border-red-500' : 'border-white/20'} rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500`}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPhone(!showPhone)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                                                    >
+                                                        {showPhone ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                                    </button>
+                                                </div>
+                                                {errors.telepon_pelapor && (
+                                                    <p className="text-red-400 text-sm mt-1">{errors.telepon_pelapor}</p>
+                                                )}
+                                                <p className="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                                                    <Lock className="h-3 w-3" />
+                                                    Nomor telepon dienkripsi untuk keamanan
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {errors.submit && (
+                                        <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4">
+                                            <p className="text-red-400">{errors.submit}</p>
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        type="submit"
+                                        className="w-full bg-red-600 hover:bg-red-700 py-6 text-lg"
+                                        disabled={submitting}
+                                    >
+                                        {submitting ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                                                Mengirim Laporan...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send className="h-5 w-5 mr-2" />
+                                                Kirim Laporan Keamanan
+                                            </>
+                                        )}
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Sidebar - Right Column */}
+                    <div className="space-y-4">
+                        {/* Priority Legend */}
+                        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+                            <CardHeader>
+                                <CardTitle className="text-white text-base">Tingkat Prioritas</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {incidentTypes.map((type) => (
+                                    <div key={type.id} className="flex items-center gap-3">
+                                        <div className={`w-3 h-3 rounded-full ${getPriorityColor(type.priority)}`}></div>
+                                        <span className="text-gray-300 text-sm">{type.label}</span>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+
+                        {/* Emergency Contact */}
+                        <Card className="bg-gradient-to-br from-red-900/50 to-orange-900/50 border-red-500/30">
+                            <CardContent className="p-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-red-500/20 rounded-lg">
+                                        <AlertTriangle className="h-5 w-5 text-red-400" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-white">Keadaan Darurat?</h4>
+                                        <p className="text-sm text-red-200 mt-1">
+                                            Untuk keadaan darurat, hubungi langsung:
+                                        </p>
+                                        <div className="mt-2 space-y-1">
+                                            <div className="text-sm text-white">
+                                                <strong>Pos Keamanan:</strong> 021-xxxx-xxxx
+                                            </div>
+                                            <div className="text-sm text-white">
+                                                <strong>Polisi:</strong> 110
+                                            </div>
+                                            <div className="text-sm text-white">
+                                                <strong>Pemadam:</strong> 113
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Tips */}
+                        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+                            <CardHeader>
+                                <CardTitle className="text-white text-base flex items-center gap-2">
+                                    <Info className="h-4 w-4 text-blue-400" />
+                                    Tips Pelaporan
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2 text-sm text-gray-400">
+                                <p>• Tuliskan kronologi sejelas mungkin</p>
+                                <p>• Sertakan tanggal dan waktu yang akurat</p>
+                                <p>• Sebutkan lokasi dengan detail</p>
+                                <p>• Pastikan nomor telepon aktif</p>
+                                <p>• Data Anda akan dienkripsi dan aman</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

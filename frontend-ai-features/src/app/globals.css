@@ -1,0 +1,327 @@
+@import "tailwindcss";
+
+:root {
+  /* Elegant Light Theme - "Porcelain & Sapphire"
+     Optimized for readability across all devices
+  */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e2e8f0;
+  --secondary-foreground: #1e293b;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  /* Darker for better contrast */
+
+  --accent: #dbeafe;
+  --accent-foreground: #1e40af;
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --border: #cbd5e1;
+  --input: #cbd5e1;
+  --ring: #2563eb;
+
+  --radius: 1rem;
+
+  /* Custom gradient text colors for light mode */
+  --gradient-text: #1e293b;
+  --gradient-text-muted: #475569;
+}
+
+/* "Ridiculously Good" Dark Theme - "Midnight Neon"
+   Optimized for eye comfort and readability
+*/
+.dark {
+  --background: #020617;
+  --foreground: #f1f5f9;
+
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+
+  --secondary: #1e293b;
+  --secondary-foreground: #f1f5f9;
+
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;
+
+  --accent: #1e293b;
+  --accent-foreground: #38bdf8;
+
+  --card: #0b1121;
+  --card-foreground: #e2e8f0;
+
+  --border: #334155;
+  /* Slightly lighter for visibility */
+  --input: #1e293b;
+  --ring: #3b82f6;
+
+  /* Custom gradient text colors for dark mode */
+  --gradient-text: #f1f5f9;
+  --gradient-text-muted: #cbd5e1;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius));
+  --radius-lg: calc(var(--radius) + 4px);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================================
+   IMPROVED GRADIENT CARD STYLES
+   Ensuring text readability on all devices
+   ================================ */
+
+/* Gradient cards with white/light text */
+.gradient-card-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+}
+
+.gradient-card-success {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+}
+
+.gradient-card-danger {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #ffffff;
+}
+
+.gradient-card-purple {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #ffffff;
+}
+
+.gradient-card-amber {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+}
+
+/* Text on gradient backgrounds - ensure high contrast */
+.gradient-text-light {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.gradient-text-light-muted {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ================================
+   BUTTON ON GRADIENT BACKGROUNDS
+   ================================ */
+
+/* Primary action buttons on dark/gradient backgrounds */
+.btn-on-gradient {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #1e293b;
+  font-weight: 600;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.btn-on-gradient:hover {
+  background-color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Secondary/outline buttons on gradient backgrounds */
+.btn-outline-on-gradient {
+  background-color: transparent;
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+}
+
+.btn-outline-on-gradient:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: #ffffff;
+}
+
+/* ================================
+   RESPONSIVE TEXT SIZING
+   Optimized for all devices
+   ================================ */
+
+/* Mobile-first approach */
+.text-responsive-xs {
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+}
+
+.text-responsive-sm {
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+}
+
+.text-responsive-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.text-responsive-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.text-responsive-xl {
+  font-size: 1.25rem;
+  line-height: 1.875rem;
+}
+
+.text-responsive-2xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+@media (min-width: 640px) {
+  .text-responsive-xs {
+    font-size: 0.75rem;
+  }
+
+  .text-responsive-sm {
+    font-size: 0.875rem;
+  }
+
+  .text-responsive-base {
+    font-size: 1rem;
+  }
+
+  .text-responsive-lg {
+    font-size: 1.25rem;
+  }
+
+  .text-responsive-xl {
+    font-size: 1.5rem;
+  }
+
+  .text-responsive-2xl {
+    font-size: 1.875rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .text-responsive-2xl {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+}
+
+/* ================================
+   ACCESSIBILITY IMPROVEMENTS
+   ================================ */
+
+/* Focus states for better accessibility */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --muted-foreground: #334155;
+    --border: #94a3b8;
+  }
+
+  .dark {
+    --muted-foreground: #e2e8f0;
+    --border: #64748b;
+  }
+}
+
+/* ================================
+   CUSTOM SCROLLBAR
+   ================================ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 5px;
+  opacity: 0.5;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted-foreground) transparent;
+}
+
+/* ================================
+   IMPROVED FORM ELEMENTS 
+   ================================ */
+
+/* Better input visibility on all backgrounds */
+input,
+textarea,
+select {
+  font-size: 16px;
+  /* Prevents zoom on iOS */
+}
+
+/* Select dropdown styling */
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.dark select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%9ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}

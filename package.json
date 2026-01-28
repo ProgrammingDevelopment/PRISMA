@@ -1,0 +1,8 @@
+{
+    "name": "prisma-monorepo",
+    "private": true,
+    "workspaces": [
+        "central-node",
+        "frontend-ai-features"
+    ]
+}

@@ -62,7 +62,7 @@ export default function LoginPage() {
 
             // SECURITY: Store credentials securely (encrypted)
             storeCredentials({
-                userId: user.id,
+                userId: String(user.id),
                 role: user.role as 'admin' | 'staff' | 'warga',
                 sessionToken: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours

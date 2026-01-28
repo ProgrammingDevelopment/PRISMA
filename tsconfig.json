@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "./frontend-ai-features/src/*"
+            ]
+        }
+    },
+    "references": [
+        {
+            "path": "./frontend-ai-features"
+        }
+    ],
+    "exclude": [
+        "node_modules",
+        ".next"
+    ]
+}

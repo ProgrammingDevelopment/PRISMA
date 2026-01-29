@@ -19,10 +19,18 @@ import {
 } from "@/lib/security"
 import { RateLimitWarning, SecurityBadge } from "@/components/ui/security"
 
+import { useClickOutside } from '@/hooks/use-click-outside'
+
 export default function LoginPage() {
     const router = useRouter()
+    const demoRef = React.useRef<HTMLDivElement>(null)
     const [isLoading, setIsLoading] = React.useState(false)
     const [showDemoCredentials, setShowDemoCredentials] = React.useState(false)
+
+    useClickOutside(demoRef, () => {
+        if (showDemoCredentials) setShowDemoCredentials(false)
+    })
+
     const [loginError, setLoginError] = React.useState<string | null>(null)
     const [loginSuccess, setLoginSuccess] = React.useState(false)
     const [rateLimit, setRateLimit] = React.useState({ remainingAttempts: 5, blockedUntil: undefined as Date | undefined })
@@ -270,7 +278,7 @@ export default function LoginPage() {
                     </Card>
 
                     {/* Demo Credentials Section */}
-                    <Card className="border-dashed border-2 border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10">
+                    <Card ref={demoRef} className="border-dashed border-2 border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10">
                         <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
                                 <CardTitle className="text-base flex items-center gap-2 text-amber-700 dark:text-amber-400">

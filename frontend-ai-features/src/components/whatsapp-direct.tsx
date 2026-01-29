@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { MessageCircle, Phone, Send, X } from 'lucide-react'
+import { useClickOutside } from '@/hooks/use-click-outside'
 
 const RT_PHONE_NUMBER = '6287872004448'
 
@@ -68,13 +69,17 @@ export function WhatsAppDirect() {
         openWhatsApp(phone, message)
     }
 
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    useClickOutside(containerRef, () => setIsOpen(false))
+
     return (
-        <>
+        <div ref={containerRef} className="relative z-50">
             {/* Floating Button */}
-            <div className="fixed bottom-20 right-4 z-50">
+            <div className={`fixed bottom-20 right-4 z-50 transition-all duration-300 ${isOpen ? 'rotate-90' : ''}`}>
                 <Button
                     size="lg"
-                    className="rounded-full w-14 h-14 shadow-lg bg-green-500 hover:bg-green-600 text-white"
+                    className="rounded-full w-14 h-14 shadow-lg bg-green-500 hover:bg-green-600 text-white transition-transform active:scale-95"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
@@ -83,7 +88,7 @@ export function WhatsAppDirect() {
 
             {/* Quick Actions Panel */}
             {isOpen && (
-                <div className="fixed bottom-36 right-4 z-50 w-72 bg-background border rounded-xl shadow-xl p-4 space-y-3 animate-in slide-in-from-bottom-5 duration-200">
+                <div className="fixed bottom-36 right-4 z-50 w-72 bg-background border rounded-xl shadow-xl p-4 space-y-3 animate-in slide-in-from-bottom-5 duration-150 ease-out origin-bottom-right">
                     <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
                         <Phone className="h-4 w-4" />
                         WhatsApp Quick Connect
@@ -91,7 +96,7 @@ export function WhatsAppDirect() {
 
                     {/* Contact RT Button */}
                     <Button
-                        className="w-full justify-start gap-3 bg-green-500 hover:bg-green-600 text-white"
+                        className="w-full justify-start gap-3 bg-green-500 hover:bg-green-600 text-white transition-colors active:bg-green-700"
                         onClick={contactRT}
                     >
                         <MessageCircle className="h-5 w-5" />
@@ -105,7 +110,7 @@ export function WhatsAppDirect() {
                     {isLoggedIn && wargaProfile?.telepon && (
                         <Button
                             variant="outline"
-                            className="w-full justify-start gap-3 border-green-500 text-green-600 hover:bg-green-50"
+                            className="w-full justify-start gap-3 border-green-500 text-green-600 hover:bg-green-50 transition-colors active:bg-green-100"
                             onClick={sendToWarga}
                         >
                             <Send className="h-5 w-5" />
@@ -123,7 +128,7 @@ export function WhatsAppDirect() {
                     )}
                 </div>
             )}
-        </>
+        </div>
     )
 }
 

@@ -1,0 +1,43 @@
+{
+    "HomePage": {
+        "title": "PRISMA RT 04",
+        "subtitle": "信息实现、管理系统与行政平台",
+        "hero": {
+            "badge": "可信与透明",
+            "heading": "RT 04 社区管理数字化",
+            "description": "基于人工智能的综合平台，用于居民服务、财务透明和社区安全。",
+            "ctaPrototype": "试用原型",
+            "ctaDocs": "文档",
+            "features": {
+                "transparency": "财务透明",
+                "security": "安全系统",
+                "service": "数字服务"
+            }
+        },
+        "about": {
+            "title": "关于 PRISMA RT 04",
+            "description": "PRISMA 是 RT 04 Kemayoran 居民的一项数字倡议，旨在建立一个团结、透明和安全的社区。"
+        }
+    },
+    "Auth": {
+        "login": {
+            "title": "居民门户登录",
+            "description": "使用 @rt0409.local 邮箱登录",
+            "emailLabel": "电子邮箱",
+            "passwordLabel": "密码",
+            "submit": "登录",
+            "registerPrompt": "尚未注册？",
+            "registerLink": "创建新账户",
+            "demoTitle": "演示凭证 (Beta)",
+            "show": "显示",
+            "hide": "隐藏"
+        }
+    },
+    "Navigation": {
+        "home": "首页",
+        "dashboard": "仪表盘",
+        "finance": "财务",
+        "security": "安全",
+        "login": "登录"
+    }
+}

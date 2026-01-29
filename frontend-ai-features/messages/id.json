@@ -1,0 +1,43 @@
+{
+    "HomePage": {
+        "title": "PRISMA RT 04",
+        "subtitle": "Platform Realisasi Informasi, Sistem Manajemen & Administrasi",
+        "hero": {
+            "badge": "Terpercaya & Transparan",
+            "heading": "Digitalisasi Manajemen Lingkungan RT 04",
+            "description": "Platform terpadu untuk pelayanan warga, transparansi keuangan, dan keamanan lingkungan berbasis AI.",
+            "ctaPrototype": "Coba Prototipe",
+            "ctaDocs": "Dokumentasi",
+            "features": {
+                "transparency": "Transparansi Keuangan",
+                "security": "Sistem Keamanan",
+                "service": "Pelayanan Digital"
+            }
+        },
+        "about": {
+            "title": "Tentang PRISMA RT 04",
+            "description": "Platform Realisasi Informasi, Sistem Manajemen & Administrasi (PRISMA) adalah inisiatif digital warga RT 04 Kemayoran untuk mewujudkan lingkungan yang guyub, transparan, dan aman."
+        }
+    },
+    "Auth": {
+        "login": {
+            "title": "Login Portal Warga",
+            "description": "Masuk menggunakan email @rt0409.local",
+            "emailLabel": "Email",
+            "passwordLabel": "Password",
+            "submit": "Masuk",
+            "registerPrompt": "Belum terdaftar?",
+            "registerLink": "Buat akun baru",
+            "demoTitle": "Demo Credentials (Beta)",
+            "show": "Tampilkan",
+            "hide": "Sembunyikan"
+        }
+    },
+    "Navigation": {
+        "home": "Beranda",
+        "dashboard": "Dashboard",
+        "finance": "Keuangan",
+        "security": "Keamanan",
+        "login": "Masuk"
+    }
+}

@@ -1,0 +1,43 @@
+{
+    "HomePage": {
+        "title": "PRISMA RT 04",
+        "subtitle": "Information Realization, Management System & Administration Platform",
+        "hero": {
+            "badge": "Trusted & Transparent",
+            "heading": "Digitalizing RT 04 Community Management",
+            "description": "Integrated platform for citizen services, financial transparency, and AI-based community security.",
+            "ctaPrototype": "Try Prototype",
+            "ctaDocs": "Documentation",
+            "features": {
+                "transparency": "Financial Transparency",
+                "security": "Security System",
+                "service": "Digital Services"
+            }
+        },
+        "about": {
+            "title": "About PRISMA RT 04",
+            "description": "PRISMA is a digital initiative by RT 04 Kemayoran citizens to create a cohesive, transparent, and secure community."
+        }
+    },
+    "Auth": {
+        "login": {
+            "title": "Citizen Portal Login",
+            "description": "Login using @rt0409.local email",
+            "emailLabel": "Email",
+            "passwordLabel": "Password",
+            "submit": "Login",
+            "registerPrompt": "Not registered?",
+            "registerLink": "Create new account",
+            "demoTitle": "Demo Credentials (Beta)",
+            "show": "Show",
+            "hide": "Hide"
+        }
+    },
+    "Navigation": {
+        "home": "Home",
+        "dashboard": "Dashboard",
+        "finance": "Finance",
+        "security": "Security",
+        "login": "Login"
+    }
+}

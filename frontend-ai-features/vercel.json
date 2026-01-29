@@ -1,13 +1,4 @@
 {
-    "rewrites": [
-        {
-            "source": "/api/chat",
-            "destination": "/api/index.py"
-        }
-    ],
-    "functions": {
-        "api/*.py": {
-            "maxDuration": 30
-        }
-    }
+    "framework": "nextjs",
+    "rewrites": []
 }

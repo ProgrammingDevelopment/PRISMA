@@ -1,6 +1,5 @@
 // Data Crawler API Route
 // Web scraping and data crawling for NLP analysis
-// Implements data collection methodology from ML roadmap
 
 import { NextRequest, NextResponse } from 'next/server';
 

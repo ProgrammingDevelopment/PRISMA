@@ -119,13 +119,6 @@ export async function POST(request: NextRequest) {
             .toLowerCase();
         const uniqueName = `${timestamp}_${sanitizedName}`;
 
-        // In production: Save file to disk
-        // const uploadDir = path.join(process.cwd(), 'public', 'uploads', kategori, subfolder);
-        // await mkdir(uploadDir, { recursive: true });
-        // const filePath = path.join(uploadDir, uniqueName);
-        // const bytes = await file.arrayBuffer();
-        // await writeFile(filePath, Buffer.from(bytes));
-
         // Mock save to database
         const fileRecord = {
             id: fileIdCounter++,

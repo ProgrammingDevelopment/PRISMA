@@ -85,7 +85,8 @@ export default function LaporanKeuanganPage() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const reportsRes = await fetch('/api/database/keuangan?type=monthly');
+                // Modified for static export - fetching JSON directly
+                const reportsRes = await fetch('/api/database/keuangan-monthly.json');
                 const reportsData = await reportsRes.json();
                 if (reportsData.success) {
                     setReports(reportsData.data);
@@ -98,7 +99,7 @@ export default function LaporanKeuanganPage() {
                     }
                 }
 
-                const expenseRes = await fetch('/api/database/keuangan?type=expense-summary');
+                const expenseRes = await fetch('/api/database/keuangan-summary.json');
                 const expenseData = await expenseRes.json();
                 if (expenseData.success) {
                     setExpenseCategories(expenseData.data.categories);

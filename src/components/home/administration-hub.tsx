@@ -50,7 +50,8 @@ export function AdministrationHub() {
     useEffect(() => {
         async function fetchExpenseSummary() {
             try {
-                const response = await fetch('/api/database/keuangan?type=expense-summary');
+                // Modified for static export - fetching JSON directly
+                const response = await fetch('/api/database/keuangan-summary.json');
                 const data = await response.json();
                 if (data.success) {
                     setExpenseCategories(data.data.categories);

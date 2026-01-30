@@ -1,0 +1,33 @@
+{
+    "success": true,
+    "data": {
+        "avgMonthlyExpense": 441667,
+        "categories": [
+            {
+                "kategori": "Kebersihan",
+                "persentase": 48,
+                "avgBulanan": 212500,
+                "keterangan": "Honor petugas kebersihan (2 orang), peralatan kebersihan (sapu, cikrak, kantong sampah)"
+            },
+            {
+                "kategori": "Operasional",
+                "persentase": 18,
+                "avgBulanan": 79500,
+                "keterangan": "ATK, fotokopi, biaya listrik pos keamanan, konsumsi rapat"
+            },
+            {
+                "kategori": "Fasilitas",
+                "persentase": 17,
+                "avgBulanan": 75000,
+                "keterangan": "Perbaikan lampu jalan, gerbang pos, saluran air, cat pagar"
+            },
+            {
+                "kategori": "Event",
+                "persentase": 17,
+                "avgBulanan": 75000,
+                "keterangan": "Kegiatan 17 Agustus (hadiah, dekorasi, konsumsi), acara RT"
+            }
+        ]
+    },
+    "timestamp": "2026-01-31T00:00:00.000Z"
+}

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:static": "next build && echo 'Copying to frontend-pages...' && powershell -Command \"Copy-Item -Recurse -Force out\\* frontend-pages\"",
     "start": "next start",
     "lint": "eslint"
   },

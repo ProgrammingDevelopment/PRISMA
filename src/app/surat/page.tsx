@@ -38,7 +38,8 @@ export default function SuratPage() {
     useEffect(() => {
         async function fetchTemplates() {
             try {
-                const response = await fetch('/api/database/surat');
+                // Modified for static export - fetching JSON directly
+                const response = await fetch('/api/database/surat.json');
                 const data = await response.json();
                 if (data.success) {
                     setTemplates(data.data);

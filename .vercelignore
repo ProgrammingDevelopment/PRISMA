@@ -1,0 +1,27 @@
+# Ignore backend code for Vercel deployment
+central-node/
+81/
+Laporan pertanggungjawaban RT/
+
+# Ignore local dev files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore git
+.git/
+
+# Ignore VSCode
+.vscode/
+*.code-workspace
+
+# Ignore test files in build
+*.test.ts
+*.test.tsx
+tests/
+__tests__/
+
+# Ignore documentation
+*.md
+docs/

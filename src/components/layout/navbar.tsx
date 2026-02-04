@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Menu, X, Bell, User, ChevronDown, FileText, BarChart3, ShieldAlert, ShieldCheck, LogOut, Settings, Sparkles } from "lucide-react"
+import { Menu, X, Bell, User, ChevronDown, FileText, BarChart3, ShieldAlert, ShieldCheck, LogOut, Settings } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import {
@@ -128,13 +128,7 @@ export function Navbar() {
                             Tentang Kami
                         </Link>
 
-                        <Link href="/ai" className="relative group">
-                            <div className="absolute -inset-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-500 opacity-0 group-hover:opacity-20 transition-opacity blur-sm" />
-                            <div className="flex items-center gap-1.5 text-sm font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                                <Sparkles className="h-4 w-4 text-purple-600" />
-                                AI Platform
-                            </div>
-                        </Link>
+
                     </div>
 
                     {/* Utility Area */}
@@ -213,14 +207,7 @@ export function Navbar() {
                                 Beranda
                             </Link>
 
-                            <Link
-                                href="/ai"
-                                className="flex items-center gap-2 text-sm font-bold text-purple-600 py-2 relative overflow-hidden rounded-lg bg-purple-50 px-3"
-                                onClick={() => setIsOpen(false)}
-                            >
-                                <Sparkles className="h-4 w-4" />
-                                AI Platform
-                            </Link>
+
 
                             <div className="space-y-3 pl-4 border-l-2 border-muted ml-2">
                                 <div className="text-sm font-semibold text-muted-foreground">Layanan Digital</div>

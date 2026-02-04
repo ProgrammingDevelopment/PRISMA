@@ -1,10 +1,7 @@
 /**
- * PRISMA AI Service Client
- * Client untuk mengakses semua fitur AI dari frontend
+ * PRISMA AI Service Client (Offline/Mock Version)
+ * Mock implementation for frontend-only deployment
  */
-import { secureFetch } from "./security";
-
-const AI_API_BASE = process.env.NEXT_PUBLIC_AI_API_URL || 'http://localhost:8000/api/v1';
 
 // Types
 export interface SentimentResult {
@@ -47,244 +44,74 @@ export interface ClusterResult {
     segment_id: number;
 }
 
-// API Client
+// Mock responses for surat-related queries
+const SURAT_RESPONSES: Record<string, string> = {
+    'domisili': 'Untuk Surat Keterangan Domisili, Anda memerlukan: nama lengkap, alamat, dan lama tinggal. Silakan download template "Surat Keterangan Domisili" di daftar template.',
+    'sktm': 'Untuk SKTM (Surat Keterangan Tidak Mampu), Anda perlu menyiapkan: nama, alamat, pekerjaan, dan penghasilan. Template tersedia di kategori Administrasi.',
+    'pindah': 'Untuk Surat Pengantar Pindah Domisili, siapkan: nama, alamat asal, alamat tujuan, dan alasan pindah.',
+    'kematian': 'Untuk Surat Keterangan Kematian, diperlukan: nama almarhum, tanggal meninggal, tempat meninggal, dan penyebab.',
+    'umum': 'Untuk Surat Keterangan RT Umum/Kelakuan Baik, cukup siapkan: nama, alamat, dan keperluan surat.',
+    'keamanan': 'Untuk Laporan Keamanan, Anda perlu mengisi: kronologi kejadian, tanggal kejadian, nama pelapor, dan nomor telepon.',
+};
+
+// API Client (Mock Version)
 class AIServiceClient {
-    private baseUrl: string;
+    /**
+     * Chat with PRISMA virtual assistant (Mock)
+     */
+    async chat(message: string): Promise<ChatResponse> {
+        // Simple keyword matching for surat-related queries
+        const lowerMessage = message.toLowerCase();
+        let response = 'Silakan cari template surat yang Anda butuhkan di daftar template di atas. Gunakan fitur pencarian untuk menemukan surat yang sesuai.';
+        let intent = 'general';
 
-    constructor(baseUrl: string = AI_API_BASE) {
-        this.baseUrl = baseUrl;
-    }
-
-    // Helper method
-    private async request<T>(
-        endpoint: string,
-        options: RequestInit = {}
-    ): Promise<T> {
-        const url = `${this.baseUrl}${endpoint}`;
-
-        const response = await secureFetch(url, {
-            ...options,
-        });
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({}));
-            throw new Error(error.detail || `API Error: ${response.status}`);
+        for (const [key, value] of Object.entries(SURAT_RESPONSES)) {
+            if (lowerMessage.includes(key)) {
+                response = value;
+                intent = `surat_${key}`;
+                break;
+            }
         }
 
-        return response.json();
+        // Check for general keywords
+        if (lowerMessage.includes('cara') || lowerMessage.includes('bagaimana')) {
+            response = 'Untuk menggunakan template surat:\n1. Download template dalam format .docx atau .pdf\n2. Isi field yang diperlukan\n3. Cetak dan serahkan ke sekretariat RT\n4. Ambil surat yang sudah jadi dalam 1-2 hari kerja';
+            intent = 'how_to';
+        }
+
+        if (lowerMessage.includes('bantuan') || lowerMessage.includes('help')) {
+            response = 'Saya bisa membantu Anda mencari template surat yang tepat. Ceritakan kebutuhan Anda, misalnya: "saya butuh surat domisili" atau "cara buat SKTM".';
+            intent = 'help';
+        }
+
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        return {
+            user_input: message,
+            response,
+            intent,
+            confidence: 0.85
+        };
     }
 
-    // ==================== NLP ====================
-
     /**
-     * Analyze sentiment of text
+     * Analyze sentiment (Mock)
      */
     async analyzeSentiment(text: string): Promise<SentimentResult> {
-        return this.request<SentimentResult>('/nlp/sentiment', {
-            method: 'POST',
-            body: JSON.stringify({ text }),
-        });
-    }
-
-    /**
-     * Analyze sentiment of multiple texts
-     */
-    async analyzeSentimentBatch(texts: string[]): Promise<{ results: SentimentResult[]; count: number }> {
-        return this.request('/nlp/sentiment/batch', {
-            method: 'POST',
-            body: JSON.stringify({ texts }),
-        });
-    }
-
-    /**
-     * Chat with PRISMA virtual assistant
-     */
-    async chat(message: string, useAi: boolean = false): Promise<ChatResponse> {
-        return this.request<ChatResponse>('/nlp/chat', {
-            method: 'POST',
-            body: JSON.stringify({ message, use_ai: useAi }),
-        });
-    }
-
-    /**
-     * Summarize text
-     */
-    async summarize(text: string, maxLength: number = 150): Promise<{
-        original_text: string;
-        summary: string;
-        compression_ratio: number;
-    }> {
-        return this.request(`/nlp/summarize?max_length=${maxLength}`, {
-            method: 'POST',
-            body: JSON.stringify({ text }),
-        });
-    }
-
-    /**
-     * Translate text
-     */
-    async translate(text: string, sourceLang: string = 'id', targetLang: string = 'en'): Promise<{
-        original_text: string;
-        translated_text: string;
-        source_lang: string;
-        target_lang: string;
-    }> {
-        return this.request(`/nlp/translate?source_lang=${sourceLang}&target_lang=${targetLang}`, {
-            method: 'POST',
-            body: JSON.stringify({ text }),
-        });
-    }
-
-    // ==================== Vision ====================
-
-    /**
-     * Classify image
-     */
-    async classifyImage(file: File): Promise<{
-        filename: string;
-        predictions: {
-            predicted_class: string;
-            confidence: number;
-            top_5: Array<{ class: string; confidence: number }>;
+        return {
+            text,
+            sentiment: 'netral',
+            confidence: 0.75,
+            method: 'mock'
         };
-    }> {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch(`${this.baseUrl}/vision/classify`, {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) {
-            throw new Error(`Classification failed: ${response.status}`);
-        }
-
-        return response.json();
     }
 
     /**
-     * Detect objects in image
-     */
-    async detectObjects(file: File): Promise<{
-        filename: string;
-        detections: {
-            num_detections: number;
-            detections: Array<{
-                class: string;
-                confidence: number;
-                bbox: { x1: number; y1: number; x2: number; y2: number };
-            }>;
-        };
-    }> {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch(`${this.baseUrl}/vision/detect`, {
-            method: 'POST',
-            body: formData,
-        });
-
-        if (!response.ok) {
-            throw new Error(`Detection failed: ${response.status}`);
-        }
-
-        return response.json();
-    }
-
-    // ==================== Prediction ====================
-
-    /**
-     * Predict financial trends
-     */
-    async predictFinancial(monthsAhead: number = 6): Promise<PredictionResult> {
-        return this.request(`/predict/financial?months_ahead=${monthsAhead}`, {
-            method: 'POST',
-        });
-    }
-
-    /**
-     * Predict churn risk for citizens
-     */
-    async predictChurn(wargaData: Array<Record<string, unknown>>): Promise<{
-        predictions: ChurnPrediction[];
-        at_risk_count: number;
-    }> {
-        return this.request('/predict/churn', {
-            method: 'POST',
-            body: JSON.stringify(wargaData),
-        });
-    }
-
-    /**
-     * Predict activity participation
-     */
-    async predictActivity(eventData: Record<string, unknown>): Promise<{
-        event: string;
-        predicted_participation_rate: number;
-        predicted_attendance: number;
-        recommendations: string[];
-    }> {
-        return this.request('/predict/activity', {
-            method: 'POST',
-            body: JSON.stringify(eventData),
-        });
-    }
-
-    // ==================== Clustering ====================
-
-    /**
-     * Cluster citizens into segments
-     */
-    async clusterCitizens(
-        citizenData: Array<Record<string, unknown>>,
-        nClusters: number = 4
-    ): Promise<{
-        clusters: ClusterResult[];
-        n_clusters: number;
-        segment_distribution: Record<string, number>;
-    }> {
-        return this.request(`/cluster/citizens?n_clusters=${nClusters}`, {
-            method: 'POST',
-            body: JSON.stringify(citizenData),
-        });
-    }
-
-    // ==================== Recommendation ====================
-
-    /**
-     * Get activity recommendations for a citizen
-     */
-    async getActivityRecommendations(wargaId: string, n: number = 5): Promise<{
-        warga_id: string;
-        recommendations: ActivityRecommendation[];
-        method: string;
-    }> {
-        return this.request(`/recommend/activities/${wargaId}?n=${n}`);
-    }
-
-    // ==================== Model Status ====================
-
-    /**
-     * Get status of all AI models
-     */
-    async getModelStatus(): Promise<{
-        models: Record<string, { status: string; type: string }>;
-        frameworks: Record<string, string>;
-    }> {
-        return this.request('/models/status');
-    }
-
-    /**
-     * Check if AI backend is healthy
+     * Check if AI backend is healthy (Mock - always returns false)
      */
     async healthCheck(): Promise<boolean> {
-        try {
-            const response = await fetch(`${this.baseUrl.replace('/api/v1', '')}/health`);
-            return response.ok;
-        } catch {
-            return false;
-        }
+        return false; // Backend not available in mock mode
     }
 }
 

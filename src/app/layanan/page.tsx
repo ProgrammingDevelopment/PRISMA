@@ -88,14 +88,14 @@ export default function LayananPage() {
         async function fetchStats() {
             try {
                 // Fetch letter templates count
-                const suratRes = await fetch('/api/database/surat');
+                const suratRes = await fetch('/api/database/surat.json');
                 const suratData = await suratRes.json();
                 if (suratData.success) {
                     setStats(prev => ({ ...prev, totalTemplates: suratData.data.length }));
                 }
 
                 // Fetch security stats
-                const securityRes = await fetch('/api/database/keamanan?type=stats');
+                const securityRes = await fetch('/api/database/keamanan.json');
                 const securityData = await securityRes.json();
                 if (securityData.success) {
                     setStats(prev => ({

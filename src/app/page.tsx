@@ -22,10 +22,7 @@ const AdministrationHub = dynamic(
   { loading: () => <SectionSkeleton height="h-[300px]" /> }
 )
 
-const AiKesimpulanHub = dynamic(
-  () => import("@/components/AiDecisionHub"),
-  { loading: () => <SectionSkeleton height="h-[500px]" /> }
-)
+
 
 const ContactSection = dynamic(
   () => import("@/components/home/contact-section").then(mod => mod.ContactSection),
@@ -58,9 +55,7 @@ export default function Home() {
 
       <AdministrationHub />
 
-      <section id="ai-kesimpulan">
-        <AiKesimpulanHub />
-      </section>
+
 
       {/* Strategic Recommendations Section */}
       <section id="rekomendasi-strategis">

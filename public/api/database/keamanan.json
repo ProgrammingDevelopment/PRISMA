@@ -1,0 +1,41 @@
+{
+    "success": true,
+    "data": {
+        "total": 5,
+        "resolved": 3,
+        "pending": 2
+    },
+    "types": [
+        {
+            "id": "pencurian",
+            "label": "Pencurian",
+            "icon": "🔓"
+        },
+        {
+            "id": "vandalisme",
+            "label": "Vandalisme",
+            "icon": "🔨"
+        },
+        {
+            "id": "gangguan",
+            "label": "Gangguan Ketertiban",
+            "icon": "📢"
+        },
+        {
+            "id": "kebakaran",
+            "label": "Potensi Kebakaran",
+            "icon": "🔥"
+        },
+        {
+            "id": "banjir",
+            "label": "Banjir / Genangan",
+            "icon": "🌊"
+        },
+        {
+            "id": "lainnya",
+            "label": "Lainnya",
+            "icon": "❓"
+        }
+    ],
+    "timestamp": "2026-02-05T00:00:00.000Z"
+}

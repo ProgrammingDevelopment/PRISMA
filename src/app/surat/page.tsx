@@ -16,6 +16,7 @@ import {
     CheckCircle,
     ChevronRight
 } from "lucide-react"
+import { SuratAssistant } from "@/components/surat/surat-assistant"
 
 interface LetterTemplate {
     id: string;
@@ -257,6 +258,11 @@ export default function SuratPage() {
                         </div>
                     </CardContent>
                 </Card>
+                {/* AI Assistant */}
+                <SuratAssistant onFilter={(query: string) => {
+                    setSearchQuery(query);
+                    // Optionally scroll to top or show a toast
+                }} />
             </div>
         </div>
     );

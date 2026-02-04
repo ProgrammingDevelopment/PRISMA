@@ -1,3 +1,0 @@
-"""
-PRISMA AI Backend Configuration
-"""

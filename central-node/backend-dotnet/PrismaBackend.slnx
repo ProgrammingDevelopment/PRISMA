@@ -1,4 +1,0 @@
-<Solution>
-  <Project Path="DecisionService/DecisionService.csproj" />
-  <Project Path="OptimizationService/OptimizationService.csproj" />
-</Solution>

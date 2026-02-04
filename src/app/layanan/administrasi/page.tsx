@@ -49,7 +49,7 @@ export default function AdministrasiPage() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const response = await fetch('/api/database/administrasi');
+                const response = await fetch('/api/database/administrasi.json');
                 const data = await response.json();
                 if (data.success) {
                     setWargaData(data.data.warga);

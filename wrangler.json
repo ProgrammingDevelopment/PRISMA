@@ -2,8 +2,7 @@
     "name": "prisma-rt04",
     "compatibility_date": "2024-09-23",
     "assets": {
-        "directory": "./out",
-        "binding": "ASSETS"
+        "directory": "./out"
     },
     "observability": {
         "enabled": true

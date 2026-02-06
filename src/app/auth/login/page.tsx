@@ -7,29 +7,21 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Mail, Lock, Loader2, Info, CheckCircle, AlertCircle, Users, Shield, Wallet } from "lucide-react"
-import { authenticateDemo, DEMO_USERS, BETA_CONFIG, DemoUser } from "@/lib/demo-credentials"
+import { Mail, Lock, Loader2, Info, CheckCircle, AlertCircle, Shield } from "lucide-react"
+import { authenticateDemo, BETA_CONFIG } from "@/lib/demo-credentials"
 import {
     checkRateLimit,
     resetRateLimit,
     sanitizeInput,
     logSecurityEvent,
-    secureStorage,
     storeCredentials
 } from "@/lib/security"
 import { RateLimitWarning, SecurityBadge } from "@/components/ui/security"
 
-import { useClickOutside } from '@/hooks/use-click-outside'
 
 export default function LoginPage() {
     const router = useRouter()
-    const demoRef = React.useRef<HTMLDivElement>(null)
     const [isLoading, setIsLoading] = React.useState(false)
-    const [showDemoCredentials, setShowDemoCredentials] = React.useState(false)
-
-    useClickOutside(demoRef, () => {
-        if (showDemoCredentials) setShowDemoCredentials(false)
-    })
 
     const [loginError, setLoginError] = React.useState<string | null>(null)
     const [loginSuccess, setLoginSuccess] = React.useState(false)
@@ -110,33 +102,8 @@ export default function LoginPage() {
         } else {
             // SECURITY: Log failed attempt
             logSecurityEvent('login_failed', false, `Email: ${email}`)
-            setLoginError("Email atau password salah. Gunakan demo credentials di bawah.")
+            setLoginError("Email atau password tidak ditemukan.")
             setIsLoading(false)
-        }
-    }
-
-    const fillDemoCredentials = (user: DemoUser) => {
-        const emailInput = document.getElementById('email') as HTMLInputElement
-        const passwordInput = document.getElementById('password') as HTMLInputElement
-        if (emailInput && passwordInput) {
-            emailInput.value = user.email
-            passwordInput.value = user.password
-        }
-    }
-
-    const getRoleIcon = (role: string) => {
-        switch (role) {
-            case 'admin': return <Shield className="h-4 w-4" />
-            case 'pengurus': return <Users className="h-4 w-4" />
-            default: return <Users className="h-4 w-4" />
-        }
-    }
-
-    const getRoleColor = (role: string) => {
-        switch (role) {
-            case 'admin': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-            case 'pengurus': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-            default: return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
         }
     }
 
@@ -233,7 +200,7 @@ export default function LoginPage() {
                                         <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                         <Input
                                             id="email"
-                                            placeholder="nama@rt0409.local"
+                                            placeholder="nama@email.com"
                                             type="email"
                                             className="pl-10"
                                             required
@@ -276,116 +243,6 @@ export default function LoginPage() {
                             </CardFooter>
                         </form>
                     </Card>
-
-                    {/* Demo Credentials Section */}
-                    <Card ref={demoRef} className="border-dashed border-2 border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10">
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-base flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                                    <Info className="h-4 w-4" />
-                                    Demo Credentials (Beta)
-                                </CardTitle>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setShowDemoCredentials(!showDemoCredentials)}
-                                    className="text-xs"
-                                >
-                                    {showDemoCredentials ? 'Sembunyikan' : 'Tampilkan'}
-                                </Button>
-                            </div>
-                        </CardHeader>
-
-                        {showDemoCredentials && (
-                            <CardContent className="pt-0">
-                                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                                    {DEMO_USERS.map((user) => (
-                                        <div
-                                            key={user.id}
-                                            className="p-3 rounded-lg bg-white dark:bg-gray-800 border shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
-                                            onClick={() => fillDemoCredentials(user)}
-                                        >
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="font-medium text-sm truncate max-w-[200px]">{user.nama}</span>
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${getRoleColor(user.role)}`}>
-                                                    {getRoleIcon(user.role)}
-                                                    {user.role}
-                                                </span>
-                                            </div>
-                                            <div className="text-xs text-muted-foreground space-y-1">
-                                                <div className="flex items-center gap-2">
-                                                    <Mail className="h-3 w-3" />
-                                                    <code className="bg-muted px-1 rounded">{user.email}</code>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Lock className="h-3 w-3" />
-                                                    <code className="bg-muted px-1 rounded">{user.password}</code>
-                                                </div>
-                                            </div>
-                                            <div className="text-xs text-primary mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                Klik untuk mengisi form →
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-3 text-center">
-                                    Domain: <code className="bg-muted px-1 rounded">@rt0409.local</code>
-                                </p>
-                            </CardContent>
-                        )}
-                    </Card>
-
-                    {/* Quick Access Buttons */}
-                    <div className="grid grid-cols-3 gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => {
-                                const emailInput = document.getElementById('email') as HTMLInputElement
-                                const passwordInput = document.getElementById('password') as HTMLInputElement
-                                if (emailInput && passwordInput) {
-                                    emailInput.value = "admin@rt0409.local"
-                                    passwordInput.value = "admin123"
-                                }
-                            }}
-                        >
-                            <Shield className="h-3 w-3 mr-1" />
-                            Admin
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => {
-                                const emailInput = document.getElementById('email') as HTMLInputElement
-                                const passwordInput = document.getElementById('password') as HTMLInputElement
-                                if (emailInput && passwordInput) {
-                                    emailInput.value = "bendahara@rt0409.local"
-                                    passwordInput.value = "benda123"
-                                }
-                            }}
-                        >
-                            <Wallet className="h-3 w-3 mr-1" />
-                            Bendahara
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
-                            onClick={() => {
-                                const emailInput = document.getElementById('email') as HTMLInputElement
-                                const passwordInput = document.getElementById('password') as HTMLInputElement
-                                if (emailInput && passwordInput) {
-                                    emailInput.value = "budi.warga@rt0409.local"
-                                    passwordInput.value = "warga123"
-                                }
-                            }}
-                        >
-                            <Users className="h-3 w-3 mr-1" />
-                            Warga
-                        </Button>
-                    </div>
 
                     {/* WhatsApp Contact Support */}
                     <div className="flex flex-col items-center pt-4 border-t border-dashed">

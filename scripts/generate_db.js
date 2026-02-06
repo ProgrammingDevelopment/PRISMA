@@ -39,12 +39,10 @@ async function main() {
         );
     `);
 
-    console.log("Seeding demo users...");
-    // Demo data based on previous context
+    console.log("Seeding placeholder users (Passwords are hashed in real app)...");
     const users = [
-        { email: 'admin@rt0409.local', password: 'password123', nama: 'Admin RT', role: 'admin', phone: '081234567890' },
-        { email: 'warga@rt0409.local', password: 'password123', nama: 'Budi Warga', role: 'warga', phone: '081234567891' },
-        { email: 'pengurus@rt0409.local', password: 'password123', nama: 'Siti Pengurus', role: 'pengurus', phone: '081234567892' }
+        { email: 'admin@example.com', password: 'changeme', nama: 'Admin Account', role: 'admin', phone: '081234567890' },
+        { email: 'user@example.com', password: 'changeme', nama: 'Test User', role: 'warga', phone: '081234567891' }
     ];
 
     const stmt = db.prepare("INSERT INTO users (email, password, nama, role, no_telepon) VALUES (?, ?, ?, ?, ?)");

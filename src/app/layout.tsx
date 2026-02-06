@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/layout/navbar";
@@ -91,6 +92,10 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${geistMono.variable} font-sans antialiased min-h-screen flex flex-col`}
       >
+        <Script
+          src="/sql-wasm.js"
+          strategy="beforeInteractive"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

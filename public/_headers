@@ -1,11 +1,27 @@
-# Cloudflare Pages Headers
-# https://developers.cloudflare.com/pages/configuration/headers/
+# Cloudflare Pages Security Headers
+# PortSwigger-compliant security headers configuration
+# Reference: https://portswigger.net/web-security
 
 /*
+  # Prevent Clickjacking (PortSwigger: Clickjacking)
   X-Frame-Options: DENY
+  # Prevent MIME sniffing (PortSwigger: MIME sniffing)
   X-Content-Type-Options: nosniff
+  # Control referrer information (PortSwigger: Information disclosure)
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  # Disable dangerous browser features
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()
+  # Force HTTPS (PortSwigger: Unencrypted communication)
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  # XSS Protection fallback for older browsers
+  X-XSS-Protection: 1; mode=block
+  # Content Security Policy (PortSwigger: XSS, Content injection)
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://wa.me https://t.me https://*.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  # Prevent DNS prefetch attacks
+  X-DNS-Prefetch-Control: off
+  # Cross-Origin policies
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
 
 # Cache static assets for 1 year
 /_next/static/*
@@ -26,3 +42,8 @@
 
 /*.svg
   Cache-Control: public, max-age=2592000
+
+# API/JSON data - no cache to prevent stale data
+/api/*
+  Cache-Control: no-store, no-cache, must-revalidate
+  X-Content-Type-Options: nosniff

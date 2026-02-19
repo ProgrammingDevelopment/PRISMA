@@ -325,3 +325,136 @@ select {
 .dark select {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%9ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
 }
+
+/* ================================
+   MICRO-INTERACTIONS & TRANSITIONS
+   PRD Spec: Button clicks, smooth fades, tactile feedback
+   ================================ */
+
+/* Tactile button feedback */
+button,
+[role="button"],
+a[href] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth page transitions (fade-in) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main > section,
+main > div > section {
+  animation: fadeIn 0.5s ease-out both;
+}
+
+/* Ripple effect for mobile touch */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Enhanced skeleton loading animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, var(--muted) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Sticky header enhanced shadow on scroll (controlled via JS class) */
+nav.scrolled {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.dark nav.scrolled {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ================================
+   SMOOTH SCROLL BEHAVIOR
+   ================================ */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ================================
+   DATA TABLE STYLES (Financial Reports)
+   PRD: Clean, striped rows with horizontal scrolling
+   ================================ */
+.data-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.data-table-container table {
+  min-width: 600px;
+}
+
+.data-table-container tbody tr:nth-child(even) {
+  background-color: var(--muted);
+}
+
+.data-table-container tbody tr:hover {
+  background-color: var(--accent);
+}
+
+/* ================================
+   PRINT STYLES
+   ================================ */
+@media print {
+  nav,
+  footer,
+  .fixed,
+  .sticky,
+  button:not(.print-visible) {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  * {
+    color: black !important;
+    background: white !important;
+  }
+}
+
+/* ================================
+   LINE CLAMP UTILITY
+   ================================ */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

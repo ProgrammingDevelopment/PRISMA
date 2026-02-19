@@ -92,6 +92,13 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${geistMono.variable} font-sans antialiased min-h-screen flex flex-col`}
       >
+        {/* Skip to Content - WCAG 2.1 AA Accessibility */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:text-sm focus:font-medium focus:shadow-lg focus:outline-none"
+        >
+          Langsung ke konten utama
+        </a>
         <Script
           src="/sql-wasm.js"
           strategy="beforeInteractive"
@@ -107,7 +114,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Navbar />
-          <main className="flex-1">
+          <main id="main-content" className="flex-1" role="main">
             {children}
           </main>
           <PWAInstallPrompt />

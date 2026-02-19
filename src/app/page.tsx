@@ -22,7 +22,25 @@ const AdministrationHub = dynamic(
   { loading: () => <SectionSkeleton height="h-[300px]" /> }
 )
 
+const AnnouncementsFeed = dynamic(
+  () => import("@/components/home/announcements-feed").then(mod => mod.AnnouncementsFeed),
+  { loading: () => <SectionSkeleton height="h-[400px]" /> }
+)
 
+const OrganizationalStructure = dynamic(
+  () => import("@/components/home/organizational-structure").then(mod => mod.OrganizationalStructure),
+  { loading: () => <SectionSkeleton height="h-[500px]" /> }
+)
+
+const ActivitySchedule = dynamic(
+  () => import("@/components/home/activity-schedule").then(mod => mod.ActivitySchedule),
+  { loading: () => <SectionSkeleton height="h-[400px]" /> }
+)
+
+const NewResidentGuide = dynamic(
+  () => import("@/components/home/new-resident-guide").then(mod => mod.NewResidentGuide),
+  { loading: () => <SectionSkeleton height="h-[500px]" /> }
+)
 
 const ContactSection = dynamic(
   () => import("@/components/home/contact-section").then(mod => mod.ContactSection),
@@ -50,17 +68,28 @@ export default function Home() {
       {/* Critical Rendering Path - Load Immediately */}
       <HeroCarousel />
 
-      {/* Deferred Rendering - Load when needed/idle */}
+      {/* Quick Actions / Feature Catalogue */}
       <FeatureCatalogue />
 
+      {/* Announcements / News Feed */}
+      <AnnouncementsFeed />
+
+      {/* Administration & Transparency Hub */}
       <AdministrationHub />
 
+      {/* Organizational Structure - RT Officials */}
+      <OrganizationalStructure />
 
+      {/* Activity Schedule - Kerja Bakti, Ronda, etc. */}
+      <ActivitySchedule />
 
       {/* Strategic Recommendations Section */}
       <section id="rekomendasi-strategis">
         <StrategicFeatures />
       </section>
+
+      {/* New Resident Guide */}
+      <NewResidentGuide />
 
       {/* About Section */}
       <section id="about" className="py-20 bg-background">

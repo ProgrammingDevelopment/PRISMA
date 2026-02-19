@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline - Build, Test & Deploy to Cloudflare Pages
 
 on:
   push:
@@ -6,28 +6,145 @@ on:
   pull_request:
     branches: [ main ]
 
+# Cancel in-progress runs for the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test-and-build:
+  # ============================================
+  # JOB 1: Lint, Type Check & Build
+  # ============================================
+  build-and-test:
     runs-on: ubuntu-latest
+    name: 🔨 Build & Test
 
     steps:
-    - name: Checkout code
+    - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
+    - name: 🟢 Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'npm'
 
-    - name: Install Dependencies
+    - name: 📦 Install Dependencies
       run: npm ci
 
-    - name: Run Linting
+    - name: 🔍 Run Linting (ESLint)
       run: npm run lint
+      continue-on-error: false
 
-    - name: Check Types (TypeScript)
-      run: npx tsc --noEmit
+    - name: 📝 Check Types (TypeScript)
+      run: npx tsc --noEmit --pretty
+      continue-on-error: false
 
-    - name: Test Build
+    - name: 🏗️ Build Production
       run: npm run build
+      env:
+        NODE_ENV: production
+
+    - name: 📊 Verify Build Output
+      run: |
+        echo "=== Build Output Verification ==="
+        ls -la out/
+        echo "Total files in out/:"
+        find out/ -type f | wc -l
+        echo "=== Static pages generated ==="
+        find out/ -name "*.html" | head -20
+
+    - name: 📤 Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-output
+        path: out/
+        retention-days: 3
+
+  # ============================================
+  # JOB 2: Security Audit
+  # ============================================
+  security-audit:
+    runs-on: ubuntu-latest
+    name: 🔒 Security Audit
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: 📦 Install Dependencies
+      run: npm ci
+
+    - name: 🔐 npm Audit (Security Vulnerabilities)
+      run: npm audit --audit-level=high || true
+
+    - name: 🕵️ Check for Hardcoded Secrets
+      run: |
+        echo "=== Checking for potential hardcoded secrets ==="
+        # Check for common secret patterns (excluding node_modules and .next)
+        grep -rn --include="*.ts" --include="*.tsx" --include="*.js" \
+          -e "sk_live" -e "pk_live" -e "AKIA" -e "password.*=.*['\"]" \
+          --exclude-dir=node_modules --exclude-dir=.next \
+          --exclude-dir=out --exclude="*.test.*" \
+          src/ || echo "No obvious hardcoded secrets found in src/"
+
+    - name: 🛡️ Verify Security Headers
+      run: |
+        echo "=== Verifying _headers file ==="
+        if [ -f "public/_headers" ]; then
+          echo "✅ _headers file exists"
+          grep -c "X-Frame-Options" public/_headers && echo "✅ Clickjacking protection"
+          grep -c "Content-Security-Policy" public/_headers && echo "✅ CSP header"
+          grep -c "Strict-Transport-Security" public/_headers && echo "✅ HSTS header"
+          grep -c "X-Content-Type-Options" public/_headers && echo "✅ MIME sniffing protection"
+        else
+          echo "❌ _headers file missing!"
+          exit 1
+        fi
+
+  # ============================================
+  # JOB 3: Deploy to Cloudflare Pages
+  # ============================================
+  deploy:
+    runs-on: ubuntu-latest
+    name: 🚀 Deploy to Cloudflare Pages
+    needs: [build-and-test, security-audit]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 📥 Download Build Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: build-output
+        path: out/
+
+    - name: 🚀 Deploy to Cloudflare Pages
+      uses: cloudflare/wrangler-action@v3
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        command: pages deploy out/ --project-name=prisma-rt04
+
+    - name: ✅ Deployment Summary
+      run: |
+        echo "============================================"
+        echo "  🎉 Deployment Successful!"
+        echo "============================================"
+        echo "  📦 Project: prisma-rt04"
+        echo "  🌐 URL: https://prisma-rt04.pages.dev"
+        echo "  ⏰ Time: $(date)"
+        echo "  📋 Commit: ${{ github.sha }}"
+        echo "============================================"

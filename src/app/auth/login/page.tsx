@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Mail, Lock, Loader2, Info, CheckCircle, AlertCircle, Shield } from "lucide-react"
-import { authenticateDemo, BETA_CONFIG } from "@/lib/demo-credentials"
+import { Mail, Lock, Loader2, CheckCircle, AlertCircle, Shield } from "lucide-react"
+import { authenticateDemo } from "@/lib/demo-credentials"
 import {
     checkRateLimit,
     resetRateLimit,
@@ -47,9 +47,18 @@ export default function LoginPage() {
         setIsLoading(true)
 
         const form = event.target as HTMLFormElement
-        // SECURITY: Sanitize inputs to prevent XSS/injection
+        // SECURITY: Sanitize email but NOT password (sanitizing password strips special chars needed for strong passwords)
+        // PortSwigger: Input validation should be context-appropriate
         const email = sanitizeInput((form.elements.namedItem('email') as HTMLInputElement).value)
-        const password = (form.elements.namedItem('password') as HTMLInputElement).value
+        const password = (form.elements.namedItem('password') as HTMLInputElement).value // Raw password for comparison
+
+        // Validate email format before processing (PortSwigger: Server-side validation)
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(email)) {
+            setLoginError("Format email tidak valid.")
+            setIsLoading(false)
+            return
+        }
 
         // Simulate API call with delay
         await new Promise(resolve => setTimeout(resolve, 1000))
@@ -119,13 +128,7 @@ export default function LoginPage() {
                     PRISMA RT 04
                 </div>
 
-                {/* Beta Badge */}
-                <div className="relative z-20 mt-6">
-                    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/20 text-amber-200 text-sm font-medium backdrop-blur-sm border border-amber-500/30">
-                        <Info className="h-4 w-4" />
-                        Beta Mode v{BETA_CONFIG.version}
-                    </span>
-                </div>
+
 
                 {/* Feature List */}
                 <div className="relative z-20 mt-auto space-y-4">
@@ -164,7 +167,7 @@ export default function LoginPage() {
                     <div className="flex flex-col space-y-2 text-center">
                         <h1 className="text-2xl font-semibold tracking-tight">Login Portal Warga</h1>
                         <p className="text-sm text-muted-foreground">
-                            Masuk menggunakan email @rt0409.local
+                            Masuk dengan akun terdaftar Anda
                         </p>
                     </div>
 
@@ -200,7 +203,7 @@ export default function LoginPage() {
                                         <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                         <Input
                                             id="email"
-                                            placeholder="nama@email.com"
+                                            placeholder="email@contoh.com"
                                             type="email"
                                             className="pl-10"
                                             required

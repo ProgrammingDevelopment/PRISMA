@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# developer credentials (PRIVATE - do not commit)
+CREDENTIALS.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
@@ -62,3 +65,17 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Wrangler
+.wrangler/
+
+# Local database
+*.db
+
+# Lighthouse reports (large files)
+public/lighthouse-*.html
+public/lighthouse-*.json
+
+# IDE
+.vscode/
+*.code-workspace

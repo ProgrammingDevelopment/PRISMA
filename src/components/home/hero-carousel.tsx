@@ -2,8 +2,9 @@
 
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, BarChart3, Calendar, Phone } from "lucide-react"
 
 const items = [
     {
@@ -41,7 +42,7 @@ export function HeroCarousel() {
     const prev = () => setCurrentIndex((prev) => (prev - 1 + items.length) % items.length)
 
     return (
-        <div className="relative h-[500px] w-full overflow-hidden bg-muted">
+        <div className="relative h-[580px] w-full overflow-hidden bg-muted">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={currentIndex}
@@ -69,6 +70,32 @@ export function HeroCarousel() {
                         >
                             {items[currentIndex].text}
                         </motion.p>
+                        {/* Quick Action Buttons - PRD Spec */}
+                        <motion.div
+                            initial={{ y: 30, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.6, duration: 0.5 }}
+                            className="flex flex-wrap justify-center gap-3"
+                        >
+                            <Button asChild size="lg" className="bg-white/95 text-slate-900 hover:bg-white font-semibold shadow-lg hover:shadow-xl transition-all hover:translate-y-[-2px] active:scale-95 rounded-full px-6">
+                                <Link href="/keuangan/laporan">
+                                    <BarChart3 className="h-4 w-4 mr-2" />
+                                    Laporan Keuangan
+                                </Link>
+                            </Button>
+                            <Button asChild size="lg" variant="outline" className="border-2 border-white/70 text-white hover:bg-white/15 hover:border-white font-semibold rounded-full px-6 transition-all hover:translate-y-[-2px] active:scale-95">
+                                <Link href="/#jadwal">
+                                    <Calendar className="h-4 w-4 mr-2" />
+                                    Jadwal Kegiatan
+                                </Link>
+                            </Button>
+                            <Button asChild size="lg" variant="outline" className="border-2 border-white/70 text-white hover:bg-white/15 hover:border-white font-semibold rounded-full px-6 transition-all hover:translate-y-[-2px] active:scale-95">
+                                <Link href="/#contact">
+                                    <Phone className="h-4 w-4 mr-2" />
+                                    Hubungi RT
+                                </Link>
+                            </Button>
+                        </motion.div>
                     </div>
                 </motion.div>
             </AnimatePresence>

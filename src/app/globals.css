@@ -344,14 +344,15 @@ a[href] {
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-main > section,
-main > div > section {
+main>section,
+main>div>section {
   animation: fadeIn 0.5s ease-out both;
 }
 
@@ -361,6 +362,7 @@ main > div > section {
     transform: scale(0);
     opacity: 0.5;
   }
+
   100% {
     transform: scale(4);
     opacity: 0;
@@ -372,6 +374,7 @@ main > div > section {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
@@ -424,6 +427,7 @@ html {
    PRINT STYLES
    ================================ */
 @media print {
+
   nav,
   footer,
   .fixed,
@@ -457,4 +461,275 @@ html {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* ================================
+   DEVICE-SPECIFIC RESPONSIVE STYLES
+   Categories:
+   - Small Phones:  320px - 374px
+   - Phones:        375px - 480px
+   - Tablets:       481px - 768px
+   - Laptops:       769px - 1024px
+   - Desktops:      1025px+
+   ================================ */
+
+/* ---- GLOBAL MOBILE (max-width: 768px) ---- */
+@media (max-width: 768px) {
+
+  /* Container and spacing */
+  .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Stack grids on mobile */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Stat cards: 2 cols on phones */
+  .grid.grid-cols-2.md\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Touch-friendly spacing */
+  button,
+  [role="button"],
+  a[href] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Page headers */
+  h1 {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+
+  h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
+  }
+
+  h3 {
+    font-size: 1.125rem !important;
+    line-height: 1.5rem !important;
+  }
+
+  /* Tab buttons: horizontal scroll on mobile */
+  .flex.gap-2.mb-6 {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 0.5rem;
+  }
+
+  .flex.gap-2.mb-6::-webkit-scrollbar {
+    display: none;
+  }
+
+  .flex.gap-2.mb-6>button {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Cards: tighter padding on mobile */
+  .p-6 {
+    padding: 1rem !important;
+  }
+
+  .p-4 {
+    padding: 0.75rem !important;
+  }
+
+  /* Stat card numbers: smaller on mobile */
+  .text-3xl {
+    font-size: 1.5rem !important;
+  }
+
+  .text-2xl {
+    font-size: 1.25rem !important;
+  }
+
+  /* Search input full width */
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  textarea {
+    font-size: 16px !important;
+    /* Prevent iOS zoom */
+  }
+
+  /* Table horizontal scroll */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Footer: stack columns */
+  footer .grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem !important;
+  }
+
+  /* Warga card: stack layout on small screens */
+  .flex.items-center.gap-4 {
+    flex-wrap: wrap;
+  }
+
+  /* Progress bar labels */
+  .flex.justify-between.text-sm {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+/* ---- SMALL PHONES: 320px - 374px ---- */
+@media (max-width: 374px) {
+  .container {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Single column for all */
+  .grid.grid-cols-2.md\:grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  h1 {
+    font-size: 1.25rem !important;
+  }
+
+  /* Smaller icons */
+  .w-12.h-12 {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+
+  .w-16.h-16 {
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+
+  /* Navbar logo */
+  nav .text-xl {
+    font-size: 1rem !important;
+  }
+
+  /* Back button + header stacking */
+  .flex.items-center.gap-4.mb-8 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* ---- PHONES: 375px - 480px ---- */
+@media (min-width: 375px) and (max-width: 480px) {
+  .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* 2 cols for stat cards */
+  .grid.grid-cols-2.md\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  .grid.grid-cols-2.md\:grid-cols-4 .text-3xl {
+    font-size: 1.25rem !important;
+  }
+
+  .grid.grid-cols-2.md\:grid-cols-4 .text-sm {
+    font-size: 0.6875rem !important;
+  }
+}
+
+/* ---- TABLETS: 481px - 768px ---- */
+@media (min-width: 481px) and (max-width: 768px) {
+  .container {
+    max-width: 100% !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+
+  .grid.md\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .grid.grid-cols-2.md\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ---- SAFE AREA INSET (Notched Phones) ---- */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  nav {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* ---- TOUCH DEVICE OPTIMIZATIONS ---- */
+@media (hover: none) and (pointer: coarse) {
+
+  /* Larger tap targets for touch */
+  button,
+  [role="button"] {
+    min-height: 44px;
+  }
+
+  /* Remove hover effects that don't work on touch */
+  .hover\:bg-white\/10:hover {
+    background-color: transparent;
+  }
+
+  /* Active state instead of hover for touch */
+  button:active,
+  [role="button"]:active,
+  a:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+
+  /* Disable double-tap zoom */
+  * {
+    touch-action: manipulation;
+  }
+}
+
+/* ---- LANDSCAPE PHONES ---- */
+@media (max-height: 500px) and (orientation: landscape) {
+  nav {
+    height: auto !important;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+
+  .flex.h-16 {
+    height: 3rem !important;
+  }
+
+  /* Reduce vertical spacing */
+  .py-8 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .mb-8 {
+    margin-bottom: 1rem !important;
+  }
 }

@@ -2,13 +2,19 @@ import TelegramBot from 'node-telegram-bot-api';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+
+// --- AUTO-LOAD TOKEN FROM .env.bot ---
+// Loads automatically so no manual env var setup is needed
+dotenv.config({ path: path.resolve(__dirname, '..', '.env.bot') });
 
 // --- CONFIGURATION ---
-// SECURITY FIX: Token loaded from environment variable, NEVER hardcoded
+// SECURITY FIX: Token loaded from .env.bot or environment variable, NEVER hardcoded
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
-    console.error('❌ TELEGRAM_BOT_TOKEN environment variable is required!');
-    console.error('   Set it with: $env:TELEGRAM_BOT_TOKEN="your-token-here"');
+    console.error('❌ TELEGRAM_BOT_TOKEN not found!');
+    console.error('   Option 1: Create .env.bot file with TELEGRAM_BOT_TOKEN=your-token');
+    console.error('   Option 2: Set env var: $env:TELEGRAM_BOT_TOKEN="your-token"');
     process.exit(1);
 }
 

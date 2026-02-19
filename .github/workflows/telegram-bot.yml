@@ -1,0 +1,52 @@
+name: 🤖 Telegram Bot - 24/7 Service
+
+on:
+  # Run every 5 hours to keep the bot alive
+  schedule:
+    - cron: '0 */5 * * *'
+  # Manual trigger
+  workflow_dispatch:
+  # Restart on push to main
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/telegram-bot.ts'
+      - '.github/workflows/telegram-bot.yml'
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    name: 🤖 Run PRISMA Telegram Bot
+    timeout-minutes: 350  # Just under 6 hours (GitHub Actions max)
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: 📦 Install Dependencies
+      run: npm ci
+
+    - name: 🤖 Start Telegram Bot
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      run: |
+        echo "============================================="
+        echo "  🤖 Starting PRISMA RT 04 Telegram Bot"
+        echo "  ⏰ $(date)"
+        echo "  🔐 Token: loaded from secrets"
+        echo "============================================="
+        
+        # Run with auto-restart on crash
+        while true; do
+          echo "🚀 Bot starting..."
+          npx ts-node -O '{"module":"commonjs"}' scripts/telegram-bot.ts || {
+            echo "⚠️ Bot crashed at $(date), restarting in 10s..."
+            sleep 10
+          }
+        done

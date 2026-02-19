@@ -79,3 +79,11 @@ public/lighthouse-*.json
 # IDE
 .vscode/
 *.code-workspace
+
+# Environment files (contain secrets)
+.env
+.env.*
+!.env.example
+
+# Bot temp files
+bot-temp/

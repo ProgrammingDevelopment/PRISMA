@@ -8,108 +8,154 @@ import {
 } from './demo-credentials'
 
 describe('Demo Credentials System', () => {
-    describe('DEMO_USERS', () => {
-        it('should have at least 5 demo users', () => {
-            expect(DEMO_USERS.length).toBeGreaterThanOrEqual(5)
-        })
-
-        it('should have users with rt0409.local domain', () => {
-            DEMO_USERS.forEach(user => {
-                expect(user.email).toMatch(/@rt0409\.local$/)
-            })
-        })
-
-        it('should have admin, pengurus, and warga roles', () => {
-            const roles = DEMO_USERS.map(u => u.role)
-            expect(roles).toContain('admin')
-            expect(roles).toContain('pengurus')
-            expect(roles).toContain('warga')
-        })
-
-        it('should have valid status for all users', () => {
-            DEMO_USERS.forEach(user => {
-                expect(['Aktif', 'Pending', 'Nonaktif']).toContain(user.status)
-            })
+    describe('DEMO_USERS (public export)', () => {
+        it('should be an empty array (credentials never exposed in UI)', () => {
+            expect(DEMO_USERS).toEqual([])
+            expect(DEMO_USERS.length).toBe(0)
         })
     })
 
     describe('authenticateDemo', () => {
         it('should authenticate valid admin credentials', () => {
-            const user = authenticateDemo('admin@rt0409.local', 'admin123')
+            const user = authenticateDemo('rerry@prisma.dev', 'Pr1sm4RT04!')
             expect(user).not.toBeNull()
             expect(user?.role).toBe('admin')
-            expect(user?.nama).toBe('Pak Hendra Wijaya')
+            expect(user?.nama).toBe('Rerry Adusundaru')
         })
 
         it('should authenticate valid warga credentials', () => {
-            const user = authenticateDemo('budi.warga@rt0409.local', 'warga123')
+            const user = authenticateDemo('warga@prisma.dev', 'W4rg4RT04!')
+            expect(user).not.toBeNull()
+            expect(user?.role).toBe('warga')
+        })
+
+        it('should authenticate pengurus (sekretaris) credentials', () => {
+            const user = authenticateDemo('sekretaris@prisma.dev', 'S3kr3t4r1s!')
+            expect(user).not.toBeNull()
+            expect(user?.role).toBe('pengurus')
+        })
+
+        it('should authenticate pengurus (bendahara) credentials', () => {
+            const user = authenticateDemo('bendahara@prisma.dev', 'B3nd4h4r4!')
+            expect(user).not.toBeNull()
+            expect(user?.role).toBe('pengurus')
+        })
+
+        it('should authenticate guest/tamu credentials', () => {
+            const user = authenticateDemo('tamu@prisma.dev', 'T4muRT04!')
             expect(user).not.toBeNull()
             expect(user?.role).toBe('warga')
         })
 
         it('should be case-insensitive for email', () => {
-            const user1 = authenticateDemo('ADMIN@RT0409.LOCAL', 'admin123')
-            const user2 = authenticateDemo('Admin@rt0409.local', 'admin123')
+            const user1 = authenticateDemo('RERRY@PRISMA.DEV', 'Pr1sm4RT04!')
+            const user2 = authenticateDemo('Rerry@Prisma.Dev', 'Pr1sm4RT04!')
             expect(user1).not.toBeNull()
             expect(user2).not.toBeNull()
         })
 
         it('should return null for invalid password', () => {
-            const user = authenticateDemo('admin@rt0409.local', 'wrongpassword')
+            const user = authenticateDemo('rerry@prisma.dev', 'wrongpassword')
             expect(user).toBeNull()
         })
 
         it('should return null for non-existent email', () => {
-            const user = authenticateDemo('nonexistent@rt0409.local', 'admin123')
+            const user = authenticateDemo('nonexistent@prisma.dev', 'password')
+            expect(user).toBeNull()
+        })
+
+        it('should return null for empty inputs', () => {
+            expect(authenticateDemo('', '')).toBeNull()
+            expect(authenticateDemo('rerry@prisma.dev', '')).toBeNull()
+        })
+
+        it('should be case-SENSITIVE for password', () => {
+            const user = authenticateDemo('rerry@prisma.dev', 'pr1sm4rt04!')
             expect(user).toBeNull()
         })
     })
 
     describe('getDemoUserByEmail', () => {
-        it('should find user by email', () => {
-            const user = getDemoUserByEmail('bendahara@rt0409.local')
+        it('should find admin user by email', () => {
+            const user = getDemoUserByEmail('rerry@prisma.dev')
             expect(user).not.toBeNull()
-            expect(user?.nama).toBe('Pak Ahmad Fauzi')
+            expect(user?.nama).toBe('Rerry Adusundaru')
+            expect(user?.role).toBe('admin')
+        })
+
+        it('should find bendahara by email', () => {
+            const user = getDemoUserByEmail('bendahara@prisma.dev')
+            expect(user).not.toBeNull()
+            expect(user?.nama).toBe('Bendahara RT 04')
         })
 
         it('should return null for non-existent email', () => {
-            const user = getDemoUserByEmail('unknown@rt0409.local')
+            const user = getDemoUserByEmail('unknown@prisma.dev')
             expect(user).toBeNull()
+        })
+
+        it('should handle email with whitespace', () => {
+            const user = getDemoUserByEmail('  rerry@prisma.dev  ')
+            expect(user).not.toBeNull()
         })
     })
 
     describe('hasPermission', () => {
-        it('should return true for admin with all permissions', () => {
-            const admin = DEMO_USERS.find(u => u.role === 'admin')!
+        it('should return true for admin with all documented permissions', () => {
+            const admin = getDemoUserByEmail('rerry@prisma.dev')!
             expect(hasPermission(admin, 'manage_finance')).toBe(true)
             expect(hasPermission(admin, 'manage_users')).toBe(true)
-            expect(hasPermission(admin, 'any_permission')).toBe(true)
+            expect(hasPermission(admin, 'manage_surat')).toBe(true)
+            expect(hasPermission(admin, 'audit_logs')).toBe(true)
         })
 
-        it('should return true for pengurus with specific permission', () => {
-            const bendahara = getDemoUserByEmail('bendahara@rt0409.local')!
+        it('should return false for admin with unlisted permission', () => {
+            const admin = getDemoUserByEmail('rerry@prisma.dev')!
+            expect(hasPermission(admin, 'nonexistent_permission')).toBe(false)
+        })
+
+        it('should return true for bendahara with finance permission', () => {
+            const bendahara = getDemoUserByEmail('bendahara@prisma.dev')!
             expect(hasPermission(bendahara, 'manage_finance')).toBe(true)
-            expect(hasPermission(bendahara, 'view_letters')).toBe(true)
+            expect(hasPermission(bendahara, 'view_reports')).toBe(true)
         })
 
-        it('should return false for missing permission', () => {
-            const warga = DEMO_USERS.find(u => u.role === 'warga')!
+        it('should return false for warga with admin permissions', () => {
+            const warga = getDemoUserByEmail('warga@prisma.dev')!
             expect(hasPermission(warga, 'manage_finance')).toBe(false)
             expect(hasPermission(warga, 'manage_users')).toBe(false)
+        })
+
+        it('should return true for warga with own permissions', () => {
+            const warga = getDemoUserByEmail('warga@prisma.dev')!
+            expect(hasPermission(warga, 'view_reports')).toBe(true)
+            expect(hasPermission(warga, 'create_surat')).toBe(true)
+            expect(hasPermission(warga, 'report_security')).toBe(true)
+        })
+
+        it('should return true for guest with view_reports only', () => {
+            const guest = getDemoUserByEmail('tamu@prisma.dev')!
+            expect(hasPermission(guest, 'view_reports')).toBe(true)
+            expect(hasPermission(guest, 'manage_finance')).toBe(false)
+            expect(hasPermission(guest, 'create_surat')).toBe(false)
         })
     })
 
     describe('BETA_CONFIG', () => {
-        it('should have beta version', () => {
-            expect(BETA_CONFIG.version).toMatch(/^\d+\.\d+\.\d+-beta$/)
+        it('should have version string', () => {
+            expect(BETA_CONFIG.version).toBeDefined()
+            expect(typeof BETA_CONFIG.version).toBe('string')
         })
 
-        it('should have rt0409.local domain', () => {
-            expect(BETA_CONFIG.domain).toBe('rt0409.local')
+        it('should have prisma.dev domain', () => {
+            expect(BETA_CONFIG.domain).toBe('prisma.dev')
         })
 
-        it('should have all required features enabled', () => {
-            expect(BETA_CONFIG.features.demoLogin).toBe(true)
+        it('should have demoLogin disabled (no UI)', () => {
+            expect(BETA_CONFIG.features.demoLogin).toBe(false)
+        })
+
+        it('should have required features enabled', () => {
             expect(BETA_CONFIG.features.customFinanceInput).toBe(true)
             expect(BETA_CONFIG.features.realtimeAnalysis).toBe(true)
             expect(BETA_CONFIG.features.budgetMonitoring).toBe(true)

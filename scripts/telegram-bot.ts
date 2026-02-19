@@ -4,11 +4,52 @@ import fs from 'fs';
 import path from 'path';
 
 // --- CONFIGURATION ---
-const token = '8502149642:AAFDU7ICOcCAB2Iw7amaIYgUcuFB0Y2I70Q';
+// SECURITY FIX: Token loaded from environment variable, NEVER hardcoded
+const token = process.env.TELEGRAM_BOT_TOKEN;
+if (!token) {
+    console.error('❌ TELEGRAM_BOT_TOKEN environment variable is required!');
+    console.error('   Set it with: $env:TELEGRAM_BOT_TOKEN="your-token-here"');
+    process.exit(1);
+}
+
 const bot = new TelegramBot(token, { polling: true });
 
 console.log('🤖 PRISMA RT 04 - Advanced Bot System Started');
 console.log('   Mode: Full Features (Finance, Admin, Security, Info)');
+console.log('   Security: Token loaded from environment');
+
+// --- INPUT VALIDATION ---
+const MAX_INPUT_LENGTH = 500;
+const RATE_LIMIT_MAP: Record<number, { count: number; resetAt: number }> = {};
+const RATE_LIMIT_MAX = 30; // messages per minute
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+
+function sanitizeBotInput(text: string): string {
+    return text
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/javascript\s*:/gi, '')
+        .replace(/\0/g, '')
+        .slice(0, MAX_INPUT_LENGTH)
+        .trim();
+}
+
+function checkBotRateLimit(chatId: number): boolean {
+    const now = Date.now();
+    const entry = RATE_LIMIT_MAP[chatId];
+
+    if (!entry || now > entry.resetAt) {
+        RATE_LIMIT_MAP[chatId] = { count: 1, resetAt: now + RATE_LIMIT_WINDOW };
+        return true;
+    }
+
+    if (entry.count >= RATE_LIMIT_MAX) {
+        return false;
+    }
+
+    entry.count++;
+    return true;
+}
 
 // --- DATA STORE (Mirrors Web Content) ---
 
@@ -43,15 +84,19 @@ const FINANCE_SUMMARY = {
 
 // --- HELPER FUNCTIONS ---
 
-const generatePDF = (title: string, data: any, filename: string): string => {
+const generatePDF = (title: string, data: Record<string, string>, filename: string): string => {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
-    const filePath = path.join(__dirname, filename);
+    const outputDir = path.join(__dirname, 'temp');
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+    }
+    const filePath = path.join(outputDir, filename);
     const stream = fs.createWriteStream(filePath);
 
     doc.pipe(stream);
 
     // Header Color Stripe
-    doc.rect(0, 0, 600, 100).fill('#0f172a'); // Slate 900
+    doc.rect(0, 0, 600, 100).fill('#0f172a');
 
     // Logo Text
     doc.fontSize(24).font('Helvetica-Bold').fillColor('white').text('PRISMA RT 04', 50, 40);
@@ -124,7 +169,7 @@ const financeMenu = {
 };
 
 // --- STATE MANAGEMENT ---
-const userState: Record<number, { step: string, data?: any }> = {};
+const userState: Record<number, { step: string, data?: Record<string, string> }> = {};
 
 // --- HANDLERS ---
 
@@ -137,11 +182,75 @@ bot.onText(/\/start/, (msg) => {
     );
 });
 
+bot.onText(/\/help/, (msg) => {
+    bot.sendMessage(msg.chat.id,
+        `ℹ️ <b>Bantuan Bot PRISMA RT 04</b>\n\n` +
+        `<b>Perintah tersedia:</b>\n` +
+        `/start - Mulai bot dan tampilkan menu\n` +
+        `/help - Tampilkan bantuan\n` +
+        `/register - Daftar warga baru\n` +
+        `/report - Lapor keamanan\n` +
+        `/finance - Lihat ringkasan keuangan\n` +
+        `/contact - Kontak pengurus RT\n\n` +
+        `Atau gunakan tombol menu di bawah layar.`,
+        { parse_mode: 'HTML' }
+    );
+});
+
+bot.onText(/\/register/, (msg) => {
+    bot.sendMessage(msg.chat.id,
+        `👤 <b>REGISTRASI WARGA</b>\n\n` +
+        `⚠️ <b>PERINGATAN PENTING:</b>\n` +
+        `Data yang dimasukkan HARUS sesuai dengan KTP/KK fisik Anda. ` +
+        `Ketidaksesuaian data akan menyebabkan penolakan registrasi dan kemungkinan pelaporan.\n\n` +
+        `Masukkan data: <b>Nama, No Rumah, No HP</b>\n\n` +
+        `Contoh: <i>Andi Pratama, No 12B, 08123456789</i>`,
+        { parse_mode: 'HTML' }
+    );
+    userState[msg.chat.id] = { step: 'REGISTER_INPUT' };
+});
+
+bot.onText(/\/report/, (msg) => {
+    bot.sendMessage(msg.chat.id,
+        `🚨 <b>LAPOR KEAMANAN</b>\n\n` +
+        `Jelaskan kejadian, lokasi, dan waktu.\n\n` +
+        `Contoh: <i>Orang mencurigakan di depan Poskamling, jam 23.00</i>`,
+        { parse_mode: 'HTML' }
+    );
+    userState[msg.chat.id] = { step: 'SECURITY_INPUT' };
+});
+
+bot.onText(/\/finance/, (msg) => {
+    bot.sendMessage(msg.chat.id,
+        `💰 <b>RINGKASAN KAS RT 04</b>\n\n` +
+        `💵 Saldo Akhir: <b>${FINANCE_SUMMARY.balance}</b>\n\n` +
+        `📥 Pemasukan: ${FINANCE_SUMMARY.income}\n` +
+        `📤 Pengeluaran: ${FINANCE_SUMMARY.expense}\n\n` +
+        `<i>Update: ${FINANCE_SUMMARY.lastUpdate}</i>`,
+        { parse_mode: 'HTML' }
+    );
+});
+
+bot.onText(/\/contact/, (msg) => {
+    const contacts = OFFICIALS.map(o => `• <b>${o.role}:</b> ${o.name}\n  📞 wa.me/${o.contact}`).join('\n\n');
+    bot.sendMessage(msg.chat.id,
+        `🚨 <b>KONTAK DARURAT & PENGURUS</b>\n\n${contacts}\n\n` +
+        `📍 <b>Lokasi Sekretariat:</b>\nGg. Bugis No.95, RT 04/RW 09`,
+        { parse_mode: 'HTML' }
+    );
+});
+
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
 
-    if (!text) return;
+    if (!text || text.startsWith('/')) return;
+
+    // Rate limiting
+    if (!checkBotRateLimit(chatId)) {
+        bot.sendMessage(chatId, '⚠️ Terlalu banyak pesan. Mohon tunggu sebentar.');
+        return;
+    }
 
     // Main Menu Handling
     if (text === '📢 Pusat Informasi') {
@@ -157,10 +266,14 @@ bot.on('message', (msg) => {
         const contacts = OFFICIALS.map(o => `• <b>${o.role}:</b> ${o.name}\n  📞 wa.me/${o.contact}`).join('\n\n');
         bot.sendMessage(chatId, `🚨 <b>KONTAK DARURAT & PENGURUS</b>\n\n${contacts}\n\n📍 <b>Lokasi Sekretariat:</b>\nGg. Bugis No.95, RT 04/RW 09`, { parse_mode: 'HTML' });
     }
-
     // Input State Handling
-    if (userState[chatId]) {
-        handleInput(chatId, text, msg.from?.first_name || 'Warga');
+    else if (userState[chatId]) {
+        const sanitizedText = sanitizeBotInput(text);
+        if (sanitizedText.length < 3) {
+            bot.sendMessage(chatId, '⚠️ Input terlalu pendek. Mohon berikan informasi yang lebih detail.');
+            return;
+        }
+        handleInput(chatId, sanitizedText, msg.from?.first_name || 'Warga');
     }
 });
 
@@ -170,6 +283,12 @@ bot.on('callback_query', (query) => {
     const chatId = query.message?.chat.id;
     const data = query.data;
     if (!chatId || !data) return;
+
+    // Rate limiting for callbacks too
+    if (!checkBotRateLimit(chatId)) {
+        bot.answerCallbackQuery(query.id, { text: 'Terlalu banyak permintaan, tunggu sebentar.' });
+        return;
+    }
 
     // Info Actions
     if (data === 'info_news') {
@@ -185,20 +304,44 @@ bot.on('callback_query', (query) => {
         bot.sendMessage(chatId, `🏛 <b>STRUKTUR PENGURUS</b>\n\n${text}`, { parse_mode: 'HTML' });
     }
     else if (data === 'info_guide') {
-        bot.sendMessage(chatId, `📖 <b>PANDUAN WARGA BARU</b>\n\n1. Lapor diri ke Ketua RT max 1x24 jam.\n2. Wajib ikut kerja bakti & ronda.\n3. Iuran kebersihan Rp 25.000/bulan.\n4. Tamu menginap wajib lapor.\n\nketik /register untuk mendaftar database.`, { parse_mode: 'HTML' });
+        bot.sendMessage(chatId,
+            `📖 <b>PANDUAN WARGA BARU</b>\n\n` +
+            `1. Lapor diri ke Ketua RT max 1x24 jam.\n` +
+            `2. Wajib ikut kerja bakti & ronda.\n` +
+            `3. Iuran kebersihan Rp 25.000/bulan.\n` +
+            `4. Tamu menginap wajib lapor.\n\n` +
+            `Ketik /register untuk mendaftar database.`,
+            { parse_mode: 'HTML' }
+        );
     }
 
     // Service Actions
     else if (data === 'srv_letter') {
-        bot.sendMessage(chatId, '📝 <b>BUAT SURAT PENGANTAR</b>\n\nSilakan ketik: <b>Jenis Surat, Nama Lengkap, Keperluan</b>\n\nContoh: <i>Surat Domisili, Budi Santoso, Mengurus Rekening Bank</i>', { parse_mode: 'HTML' });
+        bot.sendMessage(chatId,
+            '📝 <b>BUAT SURAT PENGANTAR</b>\n\n' +
+            'Silakan ketik: <b>Jenis Surat, Nama Lengkap, Keperluan</b>\n\n' +
+            'Contoh: <i>Surat Domisili, Budi Santoso, Mengurus Rekening Bank</i>',
+            { parse_mode: 'HTML' }
+        );
         userState[chatId] = { step: 'LETTER_INPUT' };
     }
     else if (data === 'srv_security') {
-        bot.sendMessage(chatId, '🚨 <b>LAPOR KEAMANAN</b>\n\nJelaskan kejadian, lokasi, dan waktu.\n\nContoh: <i>Orang mencurigakan di depan Poskamling, jam 23.00</i>', { parse_mode: 'HTML' });
+        bot.sendMessage(chatId,
+            '🚨 <b>LAPOR KEAMANAN</b>\n\n' +
+            'Jelaskan kejadian, lokasi, dan waktu.\n\n' +
+            'Contoh: <i>Orang mencurigakan di depan Poskamling, jam 23.00</i>',
+            { parse_mode: 'HTML' }
+        );
         userState[chatId] = { step: 'SECURITY_INPUT' };
     }
     else if (data === 'srv_register') {
-        bot.sendMessage(chatId, '👤 <b>REGISTRASI WARGA</b>\n\nMasukkan Nama, No Rumah, dan No HP.\n\nContoh: <i>Andi, No 12B, 08123456789</i>', { parse_mode: 'HTML' });
+        bot.sendMessage(chatId,
+            '👤 <b>REGISTRASI WARGA</b>\n\n' +
+            '⚠️ <b>PERINGATAN:</b> Data HARUS sesuai KTP/KK fisik.\n\n' +
+            'Masukkan: <b>Nama, No Rumah, No HP</b>\n\n' +
+            'Contoh: <i>Andi Pratama, No 12B, 08123456789</i>',
+            { parse_mode: 'HTML' }
+        );
         userState[chatId] = { step: 'REGISTER_INPUT' };
     }
     else if (data === 'srv_status') {
@@ -208,13 +351,34 @@ bot.on('callback_query', (query) => {
 
     // Finance Actions
     else if (data === 'fin_summary') {
-        bot.sendMessage(chatId, `💰 <b>RINGKASAN KAS RT 04</b>\n\n💵 Saldo Akhir: <b>${FINANCE_SUMMARY.balance}</b>\n\n📥 Pemasukan: ${FINANCE_SUMMARY.income}\n📤 Pengeluaran: ${FINANCE_SUMMARY.expense}\n\n<i>Update: ${FINANCE_SUMMARY.lastUpdate}</i>`, { parse_mode: 'HTML' });
+        bot.sendMessage(chatId,
+            `💰 <b>RINGKASAN KAS RT 04</b>\n\n` +
+            `💵 Saldo Akhir: <b>${FINANCE_SUMMARY.balance}</b>\n\n` +
+            `📥 Pemasukan: ${FINANCE_SUMMARY.income}\n` +
+            `📤 Pengeluaran: ${FINANCE_SUMMARY.expense}\n\n` +
+            `<i>Update: ${FINANCE_SUMMARY.lastUpdate}</i>`,
+            { parse_mode: 'HTML' }
+        );
     }
     else if (data === 'fin_expense') {
-        bot.sendMessage(chatId, '📉 <b>DETAIL PENGELUARAN (Bulan Ini)</b>\n\n1. Kebersihan: Rp 1.200.000\n2. Listrik Poskamling: Rp 300.000\n3. Konsumsi Ronda: Rp 500.000\n4. ATK: Rp 300.000', { parse_mode: 'HTML' });
+        bot.sendMessage(chatId,
+            '📉 <b>DETAIL PENGELUARAN (Bulan Ini)</b>\n\n' +
+            '1. Kebersihan: Rp 1.200.000\n' +
+            '2. Listrik Poskamling: Rp 300.000\n' +
+            '3. Konsumsi Ronda: Rp 500.000\n' +
+            '4. ATK: Rp 300.000',
+            { parse_mode: 'HTML' }
+        );
     }
     else if (data === 'fin_pay') {
-        bot.sendMessage(chatId, '💳 <b>CARA BAYAR IURAN</b>\n\n1. Cash ke Bendahara (Pak Budi)\n2. Transfer BCA: 123-456-7890 (a.n RT 04)\n3. QRIS (Scan di papan pengumuman)\n\n<i>Mohon konfirmasi setelah transfer.</i>', { parse_mode: 'HTML' });
+        bot.sendMessage(chatId,
+            '💳 <b>CARA BAYAR IURAN</b>\n\n' +
+            '1. Cash ke Bendahara (Pak Budi)\n' +
+            '2. Transfer BCA: 123-456-7890 (a.n RT 04)\n' +
+            '3. QRIS (Scan di papan pengumuman)\n\n' +
+            '<i>Mohon konfirmasi setelah transfer.</i>',
+            { parse_mode: 'HTML' }
+        );
     }
 
     bot.answerCallbackQuery(query.id);
@@ -239,8 +403,19 @@ async function handleInput(chatId: number, text: string, username: string) {
         docType = 'REGISTRASI WARGA';
         prefix = 'REG';
     } else if (state.step === 'STATUS_CHECK') {
-        // Mock status check
-        bot.sendMessage(chatId, `✅ <b>Status Tiket: ${text}</b>\n\nStatus: <b>Sedang Diproses</b>\nEstimasi Selesai: 1-2 Hari Kerja`, { parse_mode: 'HTML' });
+        // Validate ticket ID format
+        const ticketPattern = /^(SRT|SEC|REG)-\d{6}$/;
+        if (!ticketPattern.test(text)) {
+            bot.sendMessage(chatId, '⚠️ Format ID tiket tidak valid. Gunakan format: SRT-123456, SEC-123456, atau REG-123456');
+            delete userState[chatId];
+            return;
+        }
+        bot.sendMessage(chatId,
+            `✅ <b>Status Tiket: ${text}</b>\n\n` +
+            `Status: <b>Sedang Diproses</b>\n` +
+            `Estimasi Selesai: 1-2 Hari Kerja`,
+            { parse_mode: 'HTML' }
+        );
         delete userState[chatId];
         return;
     }
@@ -251,7 +426,7 @@ async function handleInput(chatId: number, text: string, username: string) {
         const id = `${prefix}-${Date.now().toString().slice(-6)}`;
         const date = new Date().toLocaleString('id-ID');
 
-        const pdfData = {
+        const pdfData: Record<string, string> = {
             'ID Tiket': id,
             'Tanggal': date,
             'Pemohon': username,
@@ -264,12 +439,36 @@ async function handleInput(chatId: number, text: string, username: string) {
         const pdfPath = generatePDF(docType, pdfData, fileName);
 
         setTimeout(() => {
-            bot.sendDocument(chatId, pdfPath, {
-                caption: `✅ <b>Permintaan Diterima!</b>\n\nID Tiket: <code>${id}</code>\n\nSimpan dokumen ini sebagai bukti pengajuan. Admin kami akan segera memverifikasi data Anda.`,
-                parse_mode: 'HTML'
-            });
-            fs.unlinkSync(pdfPath);
+            try {
+                bot.sendDocument(chatId, pdfPath, {
+                    caption: `✅ <b>Permintaan Diterima!</b>\n\nID Tiket: <code>${id}</code>\n\nSimpan dokumen ini sebagai bukti pengajuan. Admin kami akan segera memverifikasi data Anda.`,
+                    parse_mode: 'HTML'
+                });
+                // Clean up PDF file after sending
+                setTimeout(() => {
+                    try { fs.unlinkSync(pdfPath); } catch { /* file already removed */ }
+                }, 5000);
+            } catch (err) {
+                bot.sendMessage(chatId,
+                    `✅ <b>Permintaan Diterima!</b>\n\nID Tiket: <code>${id}</code>\n\n` +
+                    `⚠️ PDF tidak dapat dikirim, tapi data Anda sudah tercatat.`,
+                    { parse_mode: 'HTML' }
+                );
+            }
             delete userState[chatId];
         }, 1500);
     }
 }
+
+// --- GRACEFUL SHUTDOWN ---
+process.on('SIGINT', () => {
+    console.log('\n🛑 Bot stopping...');
+    bot.stopPolling();
+    process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+    console.log('\n🛑 Bot stopping...');
+    bot.stopPolling();
+    process.exit(0);
+});

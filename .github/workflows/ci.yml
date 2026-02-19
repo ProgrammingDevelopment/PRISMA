@@ -40,6 +40,9 @@ jobs:
       run: npx tsc --noEmit --pretty
       continue-on-error: false
 
+    - name: 🧪 Run Unit Tests (Vitest)
+      run: npm run test:ci
+
     - name: 🏗️ Build Production
       run: npm run build
       env:

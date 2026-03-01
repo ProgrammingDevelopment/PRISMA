@@ -3,32 +3,131 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
+import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 
 // --- AUTO-LOAD TOKEN FROM .env.bot ---
-// Loads automatically so no manual env var setup is needed
 dotenv.config({ path: path.resolve(__dirname, '..', '.env.bot') });
 
 // --- CONFIGURATION ---
-// SECURITY FIX: Token loaded from .env.bot or environment variable, NEVER hardcoded
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
     console.error('❌ TELEGRAM_BOT_TOKEN not found!');
-    console.error('   Option 1: Create .env.bot file with TELEGRAM_BOT_TOKEN=your-token');
-    console.error('   Option 2: Set env var: $env:TELEGRAM_BOT_TOKEN="your-token"');
+    console.error('   Create .env.bot file with TELEGRAM_BOT_TOKEN=your-token');
     process.exit(1);
 }
 
 const bot = new TelegramBot(token, { polling: true });
+const BOT_START_TIME = Date.now();
+let totalMessages = 0;
 
-console.log('🤖 PRISMA RT 04 - Advanced Bot System Started');
-console.log('   Mode: Full Features (Finance, Admin, Security, Info)');
+console.log('🤖 PRISMA RT 04 - Real-Time Intelligent Bot');
+console.log('   Mode: Real-Time Data + Gemini AI + Broadcast');
 console.log('   Security: Token loaded from environment');
+
+// --- GEMINI AI INTEGRATION ---
+const geminiApiKey = process.env.GEMINI_API_KEY;
+if (!geminiApiKey) {
+    console.warn('⚠️ GEMINI_API_KEY not found. AI Chat will be disabled.');
+}
+const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
+const aiModel = genAI ? genAI.getGenerativeModel({ model: "gemini-2.5-flash" }) : null;
+
+// --- CHAT HISTORY (per user, last 10 messages) ---
+const chatHistory: Record<number, Content[]> = {};
+const MAX_HISTORY = 10;
+
+function getUserHistory(chatId: number): Content[] {
+    if (!chatHistory[chatId]) chatHistory[chatId] = [];
+    return chatHistory[chatId];
+}
+
+function addToHistory(chatId: number, role: 'user' | 'model', text: string) {
+    const history = getUserHistory(chatId);
+    history.push({ role, parts: [{ text }] });
+    // Keep only last MAX_HISTORY entries
+    if (history.length > MAX_HISTORY * 2) {
+        chatHistory[chatId] = history.slice(-MAX_HISTORY * 2);
+    }
+}
+
+// --- REAL-TIME DATA STORE ---
+const DATA_STORE_PATH = path.resolve(__dirname, 'data-store.json');
+
+interface DataStore {
+    announcements: Array<{ id: string; title: string; date: string; description: string; type: string; pinned?: boolean }>;
+    activities: Array<{ title: string; time: string; location: string }>;
+    officials: Array<{ role: string; name: string; contact: string }>;
+    finance: {
+        balance: string;
+        income: string;
+        expense: string;
+        lastUpdate: string;
+        expenses_detail: Array<{ item: string; amount: string }>;
+        payment_methods: string[];
+    };
+    subscribers: number[];
+    stats: { totalMessages: number; startedAt: string };
+}
+
+function loadData(): DataStore {
+    try {
+        const raw = fs.readFileSync(DATA_STORE_PATH, 'utf-8');
+        return JSON.parse(raw);
+    } catch (error) {
+        console.error('[DataStore] Failed to load data-store.json:', error);
+        return {
+            announcements: [],
+            activities: [],
+            officials: [],
+            finance: { balance: "N/A", income: "N/A", expense: "N/A", lastUpdate: "N/A", expenses_detail: [], payment_methods: [] },
+            subscribers: [],
+            stats: { totalMessages: 0, startedAt: new Date().toISOString() }
+        };
+    }
+}
+
+function saveData(data: DataStore) {
+    try {
+        fs.writeFileSync(DATA_STORE_PATH, JSON.stringify(data, null, 4), 'utf-8');
+    } catch (error) {
+        console.error('[DataStore] Failed to save data-store.json:', error);
+    }
+}
+
+// Initialize stats
+const initialData = loadData();
+initialData.stats.startedAt = new Date().toISOString();
+saveData(initialData);
+console.log(`   Data Store: ${initialData.announcements.length} announcements, ${initialData.activities.length} activities loaded`);
+
+// --- WEBSITE MONITORING ---
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+const WEBSITE_URL = process.env.NEXT_PUBLIC_AI_BACKEND_URL || "http://localhost:3000";
+const MONITOR_INTERVAL = 5 * 60 * 1000;
+
+setInterval(async () => {
+    try {
+        const response = await fetch(WEBSITE_URL);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    } catch (error) {
+        console.error(`[Monitor] ${error instanceof Error ? error.message : error}`);
+        if (ADMIN_CHAT_ID) {
+            bot.sendMessage(ADMIN_CHAT_ID, `🚨 <b>ALERT: Web Down</b>\n${WEBSITE_URL}\n${error instanceof Error ? error.message : error}`, { parse_mode: 'HTML' })
+                .catch(() => { });
+        }
+    }
+}, MONITOR_INTERVAL);
+
+// --- ERROR HANDLING ---
+bot.on('polling_error', (error) => {
+    console.error(`[Polling Error] ${'code' in error ? (error as Record<string, unknown>).code : 'UNKNOWN'}: ${error.message}`);
+});
 
 // --- INPUT VALIDATION ---
 const MAX_INPUT_LENGTH = 500;
 const RATE_LIMIT_MAP: Record<number, { count: number; resetAt: number }> = {};
-const RATE_LIMIT_MAX = 30; // messages per minute
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 30;
+const RATE_LIMIT_WINDOW = 60 * 1000;
 
 function sanitizeBotInput(text: string): string {
     return text
@@ -43,79 +142,33 @@ function sanitizeBotInput(text: string): string {
 function checkBotRateLimit(chatId: number): boolean {
     const now = Date.now();
     const entry = RATE_LIMIT_MAP[chatId];
-
     if (!entry || now > entry.resetAt) {
         RATE_LIMIT_MAP[chatId] = { count: 1, resetAt: now + RATE_LIMIT_WINDOW };
         return true;
     }
-
-    if (entry.count >= RATE_LIMIT_MAX) {
-        return false;
-    }
-
+    if (entry.count >= RATE_LIMIT_MAX) return false;
     entry.count++;
     return true;
 }
 
-// --- DATA STORE (Mirrors Web Content) ---
-
-const ANNOUNCEMENTS = [
-    { title: "Kerja Bakti Bulanan", date: "16 Feb 2026", desc: "Pembersihan lingkungan RT 04." },
-    { title: "Jadwal Ronda Minggu III", date: "15 Feb 2026", desc: "Jadwal telah diperbarui." },
-    { title: "Laporan Keuangan Jan 2026", date: "05 Feb 2026", desc: "Tersedia untuk diunduh." },
-    { title: "Perbaikan Jalan Gg. Bugis", date: "14 Feb 2026", desc: "Waspada saat melintas." },
-    { title: "Persiapan HUT RI ke-81", date: "20 Feb 2026", desc: "Rapat koordinasi panitia." }
-];
-
-const ACTIVITIES = [
-    { title: "Kerja Bakti", time: "Minggu ke-3, 07.00 WIB", loc: "Lingkungan RT 04" },
-    { title: "Ronda Malam", time: "Setiap Malam, 22.00 WIB", loc: "Poskamling" },
-    { title: "Pengumpulan Sampah", time: "Senin/Rabu/Jumat, 06.00 WIB", loc: "Depan Rumah" },
-    { title: "Rapat Warga", time: "Kuartal/Sesuai Kebutuhan", loc: "Rumah Ketua RT" }
-];
-
-const OFFICIALS = [
-    { role: "Ketua RT", name: "Bpk. Rerry Adusundaru", contact: "6287872004448" },
-    { role: "Sekretaris", name: "Ibu Sekretaris", contact: "6287872004448" },
-    { role: "Bendahara", name: "Bpk. Bendahara", contact: "6287872004448" },
-    { role: "Keamanan", name: "Koordinator Keamanan", contact: "6287872004448" }
-];
-
-const FINANCE_SUMMARY = {
-    balance: "Rp 15.450.000",
-    income: "Rp 4.500.000 (Iuran Warga)",
-    expense: "Rp 2.300.000 (Operasional & Kebersihan)",
-    lastUpdate: "12 Feb 2026"
-};
-
-// --- HELPER FUNCTIONS ---
-
+// --- PDF GENERATOR ---
 const generatePDF = (title: string, data: Record<string, string>, filename: string): string => {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     const outputDir = path.join(__dirname, 'temp');
-    if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-    }
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
     const filePath = path.join(outputDir, filename);
     const stream = fs.createWriteStream(filePath);
-
     doc.pipe(stream);
 
-    // Header Color Stripe
     doc.rect(0, 0, 600, 100).fill('#0f172a');
-
-    // Logo Text
     doc.fontSize(24).font('Helvetica-Bold').fillColor('white').text('PRISMA RT 04', 50, 40);
     doc.fontSize(10).font('Helvetica').text('Sistem Informasi Digital Warga Kemayoran', 50, 70);
 
-    // Title
     doc.moveDown(5);
     doc.fillColor('#000000');
     doc.fontSize(20).text(title, { align: 'center', underline: true });
 
-    // Content Box
     doc.rect(50, 200, 500, 300).strokeColor('#e2e8f0').stroke();
-
     let y = 220;
     Object.entries(data).forEach(([key, val]) => {
         doc.fontSize(12).font('Helvetica-Bold').text(`${key}:`, 70, y);
@@ -123,20 +176,18 @@ const generatePDF = (title: string, data: Record<string, string>, filename: stri
         y += 30;
     });
 
-    // Footer
     doc.fontSize(10).text('Dokumen ini sah dan digenerate otomatis oleh sistem.', 50, 700, { align: 'center' });
-
     doc.end();
     return filePath;
 };
 
 // --- MENUS ---
-
 const mainMenu = {
     reply_markup: {
         keyboard: [
             [{ text: '📢 Pusat Informasi' }, { text: '📝 Layanan Warga' }],
-            [{ text: '📊 Data & Keuangan' }, { text: '🆘 Darurat & Kontak' }]
+            [{ text: '📊 Data & Keuangan' }, { text: '🆘 Darurat & Kontak' }],
+            [{ text: '🤖 Tanya AI Siaga' }]
         ],
         resize_keyboard: true
     }
@@ -175,20 +226,23 @@ const financeMenu = {
 };
 
 // --- STATE MANAGEMENT ---
-const userState: Record<number, { step: string, data?: Record<string, string> }> = {};
+const userState: Record<number, { step: string; data?: Record<string, string> }> = {};
 
-// --- HANDLERS ---
+// --- COMMAND HANDLERS ---
 
 bot.onText(/\/start/, (msg) => {
+    totalMessages++;
     bot.sendMessage(msg.chat.id,
         `👋 <b>Selamat Datang di Bot PRISMA RT 04!</b>\n\n` +
-        `Saya adalah asisten virtual yang siap membantu kebutuhan administrasi dan informasi Anda 24 jam.\n\n` +
-        `Silakan pilih menu di bawah ini:`,
+        `Saya adalah <b>Siaga</b>, asisten virtual cerdas berbasis AI yang siap membantu kebutuhan administrasi dan informasi Anda 24 jam.\n\n` +
+        `🤖 Anda bisa bertanya apa saja tentang RT 04!\n` +
+        `📋 Atau gunakan menu di bawah:\n`,
         { parse_mode: 'HTML', ...mainMenu }
     );
 });
 
 bot.onText(/\/help/, (msg) => {
+    totalMessages++;
     bot.sendMessage(msg.chat.id,
         `ℹ️ <b>Bantuan Bot PRISMA RT 04</b>\n\n` +
         `<b>Perintah tersedia:</b>\n` +
@@ -197,18 +251,20 @@ bot.onText(/\/help/, (msg) => {
         `/register - Daftar warga baru\n` +
         `/report - Lapor keamanan\n` +
         `/finance - Lihat ringkasan keuangan\n` +
-        `/contact - Kontak pengurus RT\n\n` +
-        `Atau gunakan tombol menu di bawah layar.`,
+        `/contact - Kontak pengurus RT\n` +
+        `/subscribe - Berlangganan notifikasi pengumuman\n` +
+        `/status - Status sistem bot\n\n` +
+        `💡 <b>Fitur AI:</b> Ketik pertanyaan apa saja dan saya akan menjawab!`,
         { parse_mode: 'HTML' }
     );
 });
 
 bot.onText(/\/register/, (msg) => {
+    totalMessages++;
     bot.sendMessage(msg.chat.id,
         `👤 <b>REGISTRASI WARGA</b>\n\n` +
         `⚠️ <b>PERINGATAN PENTING:</b>\n` +
-        `Data yang dimasukkan HARUS sesuai dengan KTP/KK fisik Anda. ` +
-        `Ketidaksesuaian data akan menyebabkan penolakan registrasi dan kemungkinan pelaporan.\n\n` +
+        `Data yang dimasukkan HARUS sesuai dengan KTP/KK fisik Anda.\n\n` +
         `Masukkan data: <b>Nama, No Rumah, No HP</b>\n\n` +
         `Contoh: <i>Andi Pratama, No 12B, 08123456789</i>`,
         { parse_mode: 'HTML' }
@@ -217,6 +273,7 @@ bot.onText(/\/register/, (msg) => {
 });
 
 bot.onText(/\/report/, (msg) => {
+    totalMessages++;
     bot.sendMessage(msg.chat.id,
         `🚨 <b>LAPOR KEAMANAN</b>\n\n` +
         `Jelaskan kejadian, lokasi, dan waktu.\n\n` +
@@ -227,18 +284,22 @@ bot.onText(/\/report/, (msg) => {
 });
 
 bot.onText(/\/finance/, (msg) => {
+    totalMessages++;
+    const data = loadData();
     bot.sendMessage(msg.chat.id,
         `💰 <b>RINGKASAN KAS RT 04</b>\n\n` +
-        `💵 Saldo Akhir: <b>${FINANCE_SUMMARY.balance}</b>\n\n` +
-        `📥 Pemasukan: ${FINANCE_SUMMARY.income}\n` +
-        `📤 Pengeluaran: ${FINANCE_SUMMARY.expense}\n\n` +
-        `<i>Update: ${FINANCE_SUMMARY.lastUpdate}</i>`,
+        `💵 Saldo Akhir: <b>${data.finance.balance}</b>\n\n` +
+        `📥 Pemasukan: ${data.finance.income}\n` +
+        `📤 Pengeluaran: ${data.finance.expense}\n\n` +
+        `<i>Update: ${data.finance.lastUpdate}</i>`,
         { parse_mode: 'HTML' }
     );
 });
 
 bot.onText(/\/contact/, (msg) => {
-    const contacts = OFFICIALS.map(o => `• <b>${o.role}:</b> ${o.name}\n  📞 wa.me/${o.contact}`).join('\n\n');
+    totalMessages++;
+    const data = loadData();
+    const contacts = data.officials.map(o => `• <b>${o.role}:</b> ${o.name}\n  📞 wa.me/${o.contact}`).join('\n\n');
     bot.sendMessage(msg.chat.id,
         `🚨 <b>KONTAK DARURAT & PENGURUS</b>\n\n${contacts}\n\n` +
         `📍 <b>Lokasi Sekretariat:</b>\nGg. Bugis No.95, RT 04/RW 09`,
@@ -246,13 +307,107 @@ bot.onText(/\/contact/, (msg) => {
     );
 });
 
+// --- /subscribe ---
+bot.onText(/\/subscribe/, (msg) => {
+    totalMessages++;
+    const data = loadData();
+    const chatId = msg.chat.id;
+
+    if (data.subscribers.includes(chatId)) {
+        // Unsubscribe
+        data.subscribers = data.subscribers.filter(id => id !== chatId);
+        saveData(data);
+        bot.sendMessage(chatId, '🔕 Anda telah <b>berhenti berlangganan</b> notifikasi pengumuman.\n\nKetik /subscribe lagi untuk berlangganan ulang.', { parse_mode: 'HTML' });
+    } else {
+        data.subscribers.push(chatId);
+        saveData(data);
+        bot.sendMessage(chatId, '🔔 Anda telah <b>berlangganan</b> notifikasi pengumuman!\n\nAnda akan menerima pesan otomatis saat ada pengumuman baru.\nKetik /subscribe lagi untuk berhenti berlangganan.', { parse_mode: 'HTML' });
+    }
+});
+
+// --- /status ---
+bot.onText(/\/status/, (msg) => {
+    totalMessages++;
+    const uptime = Date.now() - BOT_START_TIME;
+    const hours = Math.floor(uptime / 3600000);
+    const minutes = Math.floor((uptime % 3600000) / 60000);
+    const seconds = Math.floor((uptime % 60000) / 1000);
+
+    const memUsage = process.memoryUsage();
+    const data = loadData();
+
+    bot.sendMessage(msg.chat.id,
+        `📊 <b>STATUS SISTEM BOT PRISMA</b>\n\n` +
+        `⏱ <b>Uptime:</b> ${hours}j ${minutes}m ${seconds}s\n` +
+        `💬 <b>Total Pesan:</b> ${totalMessages}\n` +
+        `👥 <b>Subscriber:</b> ${data.subscribers.length} warga\n` +
+        `📰 <b>Pengumuman:</b> ${data.announcements.length} aktif\n` +
+        `🧠 <b>Memory:</b> ${(memUsage.heapUsed / 1024 / 1024).toFixed(1)} MB\n` +
+        `🤖 <b>AI Engine:</b> ${aiModel ? '✅ Gemini Active' : '❌ Offline'}\n` +
+        `🌐 <b>Monitor:</b> ${WEBSITE_URL}\n\n` +
+        `<i>Bot berjalan sejak ${new Date(BOT_START_TIME).toLocaleString('id-ID')}</i>`,
+        { parse_mode: 'HTML' }
+    );
+});
+
+// --- /broadcast (Admin Only) ---
+bot.onText(/\/broadcast (.+)/, (msg, match) => {
+    totalMessages++;
+    const chatId = msg.chat.id;
+
+    // Simple admin check: use ADMIN_CHAT_ID
+    if (ADMIN_CHAT_ID && chatId.toString() !== ADMIN_CHAT_ID) {
+        bot.sendMessage(chatId, '⛔ Hanya admin yang dapat menggunakan perintah ini.');
+        return;
+    }
+
+    const broadcastText = match?.[1];
+    if (!broadcastText) {
+        bot.sendMessage(chatId, '⚠️ Format: /broadcast [pesan pengumuman]');
+        return;
+    }
+
+    const data = loadData();
+
+    // Add to announcements
+    const newAnnouncement = {
+        id: `ann-${Date.now()}`,
+        title: broadcastText.slice(0, 80),
+        date: new Date().toISOString().split('T')[0],
+        description: broadcastText,
+        type: 'urgent' as const,
+        pinned: true
+    };
+    data.announcements.unshift(newAnnouncement);
+    saveData(data);
+
+    // Broadcast to subscribers
+    let sent = 0;
+    let failed = 0;
+    const broadcastMsg = `📢 <b>PENGUMUMAN BARU RT 04</b>\n\n${broadcastText}\n\n<i>${new Date().toLocaleString('id-ID')}</i>`;
+
+    data.subscribers.forEach(subId => {
+        bot.sendMessage(subId, broadcastMsg, { parse_mode: 'HTML' })
+            .then(() => sent++)
+            .catch(() => failed++);
+    });
+
+    bot.sendMessage(chatId,
+        `✅ <b>Broadcast berhasil!</b>\n\n` +
+        `📨 Dikirim ke: ${data.subscribers.length} subscriber\n` +
+        `📰 Ditambahkan ke pengumuman real-time`,
+        { parse_mode: 'HTML' }
+    );
+});
+
+// --- MESSAGE HANDLER ---
 bot.on('message', (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
-
     if (!text || text.startsWith('/')) return;
 
-    // Rate limiting
+    totalMessages++;
+
     if (!checkBotRateLimit(chatId)) {
         bot.sendMessage(chatId, '⚠️ Terlalu banyak pesan. Mohon tunggu sebentar.');
         return;
@@ -269,8 +424,12 @@ bot.on('message', (msg) => {
         bot.sendMessage(chatId, '📈 <b>Transparansi Data</b>\nCek kas RT dan data statistik.', { parse_mode: 'HTML', ...financeMenu });
     }
     else if (text === '🆘 Darurat & Kontak') {
-        const contacts = OFFICIALS.map(o => `• <b>${o.role}:</b> ${o.name}\n  📞 wa.me/${o.contact}`).join('\n\n');
+        const data = loadData();
+        const contacts = data.officials.map(o => `• <b>${o.role}:</b> ${o.name}\n  📞 wa.me/${o.contact}`).join('\n\n');
         bot.sendMessage(chatId, `🚨 <b>KONTAK DARURAT & PENGURUS</b>\n\n${contacts}\n\n📍 <b>Lokasi Sekretariat:</b>\nGg. Bugis No.95, RT 04/RW 09`, { parse_mode: 'HTML' });
+    }
+    else if (text === '🤖 Tanya AI Siaga') {
+        bot.sendMessage(chatId, '🤖 <b>Mode AI Aktif!</b>\n\nSilakan ketik pertanyaan apa saja tentang RT 04, layanan, keuangan, atau hal lainnya.\n\nSaya akan menjawab dengan cerdas! 💬', { parse_mode: 'HTML' });
     }
     // Input State Handling
     else if (userState[chatId]) {
@@ -281,35 +440,116 @@ bot.on('message', (msg) => {
         }
         handleInput(chatId, sanitizedText, msg.from?.first_name || 'Warga');
     }
+    // AI Fallback — any free text goes to Gemini
+    else {
+        handleAIChat(chatId, text, msg.from?.first_name || 'Warga');
+    }
 });
 
-// --- CALLBACK QUERY HANDLER ---
+// --- AI CHAT WITH FULL CONTEXT ---
+async function handleAIChat(chatId: number, text: string, username: string) {
+    if (!aiModel) {
+        bot.sendMessage(chatId, "Maaf, fitur AI sedang tidak aktif. Silakan pilih menu di bawah ini:", mainMenu);
+        return;
+    }
 
+    bot.sendChatAction(chatId, 'typing');
+
+    // Load real-time data for context
+    const data = loadData();
+
+    const systemPrompt = `Anda adalah "Siaga", asisten virtual cerdas untuk RT 04 RW 09 Kelurahan Kemayoran, Jakarta Pusat.
+
+KONTEKS DATA REAL-TIME RT 04:
+
+PENGUMUMAN TERBARU:
+${data.announcements.map(a => `- [${a.date}] ${a.title}: ${a.description}`).join('\n')}
+
+JADWAL KEGIATAN:
+${data.activities.map(a => `- ${a.title}: ${a.time} di ${a.location}`).join('\n')}
+
+PENGURUS RT:
+${data.officials.map(o => `- ${o.role}: ${o.name} (WA: ${o.contact})`).join('\n')}
+
+KEUANGAN:
+- Saldo: ${data.finance.balance}
+- Pemasukan: ${data.finance.income}
+- Pengeluaran: ${data.finance.expense}
+- Update terakhir: ${data.finance.lastUpdate}
+- Detail pengeluaran: ${data.finance.expenses_detail.map(e => `${e.item}: ${e.amount}`).join(', ')}
+- Cara bayar iuran: ${data.finance.payment_methods.join('; ')}
+
+LOKASI SEKRETARIAT: Gg. Bugis No.95, RT 04/RW 09 Kemayoran
+
+ATURAN:
+1. Jawab dengan ramah, ringkas, dan profesional dalam bahasa Indonesia
+2. Gunakan data real-time di atas untuk menjawab pertanyaan spesifik
+3. Jika ditanya tentang hal di luar konteks RT, tetap jawab dengan baik sebagai asisten umum
+4. Jangan mengarang data yang tidak ada di konteks
+5. Jika relevan, arahkan ke fitur bot (contoh: ketik /register untuk mendaftar)
+6. Nama warga yang bertanya: ${username}`;
+
+    // Add user message to history
+    addToHistory(chatId, 'user', text);
+
+    try {
+        const chat = aiModel.startChat({
+            history: getUserHistory(chatId).slice(0, -1), // exclude last (current) message
+            systemInstruction: systemPrompt,
+        });
+
+        // Keep typing during generation
+        const typingInterval = setInterval(() => {
+            bot.sendChatAction(chatId, 'typing').catch(() => { });
+        }, 4000);
+
+        const result = await chat.sendMessage(text);
+        clearInterval(typingInterval);
+
+        const responseText = result.response.text();
+        addToHistory(chatId, 'model', responseText);
+
+        // Send with Markdown, fallback to plain text if it fails
+        bot.sendMessage(chatId, responseText, { parse_mode: 'Markdown' })
+            .catch(() => {
+                bot.sendMessage(chatId, responseText);
+            });
+    } catch (error) {
+        console.error("Gemini AI Error:", error);
+        bot.sendMessage(chatId, "Maaf, terjadi kendala pada AI. Silakan coba lagi atau gunakan menu yang tersedia.", mainMenu);
+    }
+}
+
+// --- CALLBACK QUERY HANDLER ---
 bot.on('callback_query', (query) => {
     const chatId = query.message?.chat.id;
-    const data = query.data;
-    if (!chatId || !data) return;
+    const callbackData = query.data;
+    if (!chatId || !callbackData) return;
 
-    // Rate limiting for callbacks too
+    totalMessages++;
+
     if (!checkBotRateLimit(chatId)) {
         bot.answerCallbackQuery(query.id, { text: 'Terlalu banyak permintaan, tunggu sebentar.' });
         return;
     }
 
+    // Load data fresh for every callback
+    const data = loadData();
+
     // Info Actions
-    if (data === 'info_news') {
-        const text = ANNOUNCEMENTS.map((a, i) => `${i + 1}. <b>${a.title}</b> (${a.date})\n   ${a.desc}`).join('\n\n');
-        bot.sendMessage(chatId, `📰 <b>PENGUMUMAN TERBARU</b>\n\n${text}`, { parse_mode: 'HTML' });
+    if (callbackData === 'info_news') {
+        const text = data.announcements.map((a, i) => `${i + 1}. <b>${a.title}</b> (${a.date})\n   ${a.description}`).join('\n\n');
+        bot.sendMessage(chatId, `📰 <b>PENGUMUMAN TERBARU</b>\n\n${text || 'Belum ada pengumuman.'}`, { parse_mode: 'HTML' });
     }
-    else if (data === 'info_schedule') {
-        const text = ACTIVITIES.map(a => `🗓 <b>${a.title}</b>\n   🕒 ${a.time}\n   📍 ${a.loc}`).join('\n\n');
+    else if (callbackData === 'info_schedule') {
+        const text = data.activities.map(a => `🗓 <b>${a.title}</b>\n   🕒 ${a.time}\n   📍 ${a.location}`).join('\n\n');
         bot.sendMessage(chatId, `📅 <b>JADWAL KEGIATAN</b>\n\n${text}`, { parse_mode: 'HTML' });
     }
-    else if (data === 'info_structure') {
-        const text = OFFICIALS.map(o => `👤 <b>${o.role}</b>: ${o.name}`).join('\n');
+    else if (callbackData === 'info_structure') {
+        const text = data.officials.map(o => `👤 <b>${o.role}</b>: ${o.name}`).join('\n');
         bot.sendMessage(chatId, `🏛 <b>STRUKTUR PENGURUS</b>\n\n${text}`, { parse_mode: 'HTML' });
     }
-    else if (data === 'info_guide') {
+    else if (callbackData === 'info_guide') {
         bot.sendMessage(chatId,
             `📖 <b>PANDUAN WARGA BARU</b>\n\n` +
             `1. Lapor diri ke Ketua RT max 1x24 jam.\n` +
@@ -322,7 +562,7 @@ bot.on('callback_query', (query) => {
     }
 
     // Service Actions
-    else if (data === 'srv_letter') {
+    else if (callbackData === 'srv_letter') {
         bot.sendMessage(chatId,
             '📝 <b>BUAT SURAT PENGANTAR</b>\n\n' +
             'Silakan ketik: <b>Jenis Surat, Nama Lengkap, Keperluan</b>\n\n' +
@@ -331,7 +571,7 @@ bot.on('callback_query', (query) => {
         );
         userState[chatId] = { step: 'LETTER_INPUT' };
     }
-    else if (data === 'srv_security') {
+    else if (callbackData === 'srv_security') {
         bot.sendMessage(chatId,
             '🚨 <b>LAPOR KEAMANAN</b>\n\n' +
             'Jelaskan kejadian, lokasi, dan waktu.\n\n' +
@@ -340,7 +580,7 @@ bot.on('callback_query', (query) => {
         );
         userState[chatId] = { step: 'SECURITY_INPUT' };
     }
-    else if (data === 'srv_register') {
+    else if (callbackData === 'srv_register') {
         bot.sendMessage(chatId,
             '👤 <b>REGISTRASI WARGA</b>\n\n' +
             '⚠️ <b>PERINGATAN:</b> Data HARUS sesuai KTP/KK fisik.\n\n' +
@@ -350,48 +590,35 @@ bot.on('callback_query', (query) => {
         );
         userState[chatId] = { step: 'REGISTER_INPUT' };
     }
-    else if (data === 'srv_status') {
+    else if (callbackData === 'srv_status') {
         bot.sendMessage(chatId, '🔍 Masukkan <b>ID TIKET</b> laporan Anda (Contoh: REG-123456):', { parse_mode: 'HTML' });
         userState[chatId] = { step: 'STATUS_CHECK' };
     }
 
     // Finance Actions
-    else if (data === 'fin_summary') {
+    else if (callbackData === 'fin_summary') {
         bot.sendMessage(chatId,
             `💰 <b>RINGKASAN KAS RT 04</b>\n\n` +
-            `💵 Saldo Akhir: <b>${FINANCE_SUMMARY.balance}</b>\n\n` +
-            `📥 Pemasukan: ${FINANCE_SUMMARY.income}\n` +
-            `📤 Pengeluaran: ${FINANCE_SUMMARY.expense}\n\n` +
-            `<i>Update: ${FINANCE_SUMMARY.lastUpdate}</i>`,
+            `💵 Saldo Akhir: <b>${data.finance.balance}</b>\n\n` +
+            `📥 Pemasukan: ${data.finance.income}\n` +
+            `📤 Pengeluaran: ${data.finance.expense}\n\n` +
+            `<i>Update: ${data.finance.lastUpdate}</i>`,
             { parse_mode: 'HTML' }
         );
     }
-    else if (data === 'fin_expense') {
-        bot.sendMessage(chatId,
-            '📉 <b>DETAIL PENGELUARAN (Bulan Ini)</b>\n\n' +
-            '1. Kebersihan: Rp 1.200.000\n' +
-            '2. Listrik Poskamling: Rp 300.000\n' +
-            '3. Konsumsi Ronda: Rp 500.000\n' +
-            '4. ATK: Rp 300.000',
-            { parse_mode: 'HTML' }
-        );
+    else if (callbackData === 'fin_expense') {
+        const details = data.finance.expenses_detail.map((e, i) => `${i + 1}. ${e.item}: ${e.amount}`).join('\n');
+        bot.sendMessage(chatId, `📉 <b>DETAIL PENGELUARAN (Bulan Ini)</b>\n\n${details}`, { parse_mode: 'HTML' });
     }
-    else if (data === 'fin_pay') {
-        bot.sendMessage(chatId,
-            '💳 <b>CARA BAYAR IURAN</b>\n\n' +
-            '1. Cash ke Bendahara (Pak Budi)\n' +
-            '2. Transfer BCA: 123-456-7890 (a.n RT 04)\n' +
-            '3. QRIS (Scan di papan pengumuman)\n\n' +
-            '<i>Mohon konfirmasi setelah transfer.</i>',
-            { parse_mode: 'HTML' }
-        );
+    else if (callbackData === 'fin_pay') {
+        const methods = data.finance.payment_methods.map((m, i) => `${i + 1}. ${m}`).join('\n');
+        bot.sendMessage(chatId, `💳 <b>CARA BAYAR IURAN</b>\n\n${methods}\n\n<i>Mohon konfirmasi setelah transfer.</i>`, { parse_mode: 'HTML' });
     }
 
     bot.answerCallbackQuery(query.id);
 });
 
 // --- INPUT LOGIC ---
-
 async function handleInput(chatId: number, text: string, username: string) {
     const state = userState[chatId];
     if (!state) return;
@@ -409,7 +636,6 @@ async function handleInput(chatId: number, text: string, username: string) {
         docType = 'REGISTRASI WARGA';
         prefix = 'REG';
     } else if (state.step === 'STATUS_CHECK') {
-        // Validate ticket ID format
         const ticketPattern = /^(SRT|SEC|REG)-\d{6}$/;
         if (!ticketPattern.test(text)) {
             bot.sendMessage(chatId, '⚠️ Format ID tiket tidak valid. Gunakan format: SRT-123456, SEC-123456, atau REG-123456');
@@ -447,14 +673,13 @@ async function handleInput(chatId: number, text: string, username: string) {
         setTimeout(() => {
             try {
                 bot.sendDocument(chatId, pdfPath, {
-                    caption: `✅ <b>Permintaan Diterima!</b>\n\nID Tiket: <code>${id}</code>\n\nSimpan dokumen ini sebagai bukti pengajuan. Admin kami akan segera memverifikasi data Anda.`,
+                    caption: `✅ <b>Permintaan Diterima!</b>\n\nID Tiket: <code>${id}</code>\n\nSimpan dokumen ini sebagai bukti pengajuan.`,
                     parse_mode: 'HTML'
                 });
-                // Clean up PDF file after sending
                 setTimeout(() => {
-                    try { fs.unlinkSync(pdfPath); } catch { /* file already removed */ }
+                    try { fs.unlinkSync(pdfPath); } catch { /* ok */ }
                 }, 5000);
-            } catch (err) {
+            } catch {
                 bot.sendMessage(chatId,
                     `✅ <b>Permintaan Diterima!</b>\n\nID Tiket: <code>${id}</code>\n\n` +
                     `⚠️ PDF tidak dapat dikirim, tapi data Anda sudah tercatat.`,
@@ -469,12 +694,18 @@ async function handleInput(chatId: number, text: string, username: string) {
 // --- GRACEFUL SHUTDOWN ---
 process.on('SIGINT', () => {
     console.log('\n🛑 Bot stopping...');
+    const data = loadData();
+    data.stats.totalMessages = totalMessages;
+    saveData(data);
     bot.stopPolling();
     process.exit(0);
 });
 
 process.on('SIGTERM', () => {
     console.log('\n🛑 Bot stopping...');
+    const data = loadData();
+    data.stats.totalMessages = totalMessages;
+    saveData(data);
     bot.stopPolling();
     process.exit(0);
 });

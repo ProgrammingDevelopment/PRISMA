@@ -1,0 +1,118 @@
+{
+    "announcements": [
+        {
+            "id": "ann-1",
+            "title": "Kerja Bakti Bulanan",
+            "date": "2026-02-16",
+            "description": "Pembersihan lingkungan RT 04. Seluruh warga diharapkan berpartisipasi.",
+            "type": "event",
+            "pinned": true
+        },
+        {
+            "id": "ann-2",
+            "title": "Jadwal Ronda Minggu III",
+            "date": "2026-02-15",
+            "description": "Jadwal ronda malam minggu ketiga Februari telah diperbarui.",
+            "type": "info"
+        },
+        {
+            "id": "ann-3",
+            "title": "Laporan Keuangan Jan 2026",
+            "date": "2026-02-05",
+            "description": "Laporan keuangan bulan Januari tersedia untuk diunduh.",
+            "type": "info"
+        },
+        {
+            "id": "ann-4",
+            "title": "Perbaikan Jalan Gg. Bugis",
+            "date": "2026-02-14",
+            "description": "Perbaikan lampu jalan di Gang Bugis. Waspada saat melintas.",
+            "type": "maintenance"
+        },
+        {
+            "id": "ann-5",
+            "title": "Persiapan HUT RI ke-81",
+            "date": "2026-02-20",
+            "description": "Rapat koordinasi panitia HUT RI di Poskamling.",
+            "type": "event"
+        }
+    ],
+    "activities": [
+        {
+            "title": "Kerja Bakti",
+            "time": "Minggu ke-3, 07.00 WIB",
+            "location": "Lingkungan RT 04"
+        },
+        {
+            "title": "Ronda Malam",
+            "time": "Setiap Malam, 22.00 WIB",
+            "location": "Poskamling"
+        },
+        {
+            "title": "Pengumpulan Sampah",
+            "time": "Senin/Rabu/Jumat, 06.00 WIB",
+            "location": "Depan Rumah"
+        },
+        {
+            "title": "Rapat Warga",
+            "time": "Kuartal/Sesuai Kebutuhan",
+            "location": "Rumah Ketua RT"
+        }
+    ],
+    "officials": [
+        {
+            "role": "Ketua RT",
+            "name": "Bpk. Rerry Adusundaru",
+            "contact": "6287872004448"
+        },
+        {
+            "role": "Sekretaris",
+            "name": "Ibu Sekretaris",
+            "contact": "6287872004448"
+        },
+        {
+            "role": "Bendahara",
+            "name": "Bpk. Bendahara",
+            "contact": "6287872004448"
+        },
+        {
+            "role": "Keamanan",
+            "name": "Koordinator Keamanan",
+            "contact": "6287872004448"
+        }
+    ],
+    "finance": {
+        "balance": "Rp 15.450.000",
+        "income": "Rp 4.500.000 (Iuran Warga)",
+        "expense": "Rp 2.300.000 (Operasional & Kebersihan)",
+        "lastUpdate": "12 Feb 2026",
+        "expenses_detail": [
+            {
+                "item": "Kebersihan",
+                "amount": "Rp 1.200.000"
+            },
+            {
+                "item": "Listrik Poskamling",
+                "amount": "Rp 300.000"
+            },
+            {
+                "item": "Konsumsi Ronda",
+                "amount": "Rp 500.000"
+            },
+            {
+                "item": "ATK",
+                "amount": "Rp 300.000"
+            }
+        ],
+        "payment_methods": [
+            "Cash ke Bendahara (Pak Budi)",
+            "Transfer BCA: 123-456-7890 (a.n RT 04)",
+            "QRIS (Scan di papan pengumuman)"
+        ]
+    },
+    "subscribers": [],
+    "stats": {
+        "totalMessages": 0,
+        "startedAt": "2026-03-01T18:45:18.666Z"
+    }
+}

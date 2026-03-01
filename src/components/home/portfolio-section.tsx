@@ -1,7 +1,6 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { motion } from "framer-motion"
 import Image from "next/image"
 
@@ -44,6 +43,9 @@ export function PortfolioSection({ items }: PortfolioSectionProps) {
                                         src={item.imageUrl}
                                         alt={item.title}
                                         fill
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                                        loading="lazy"
+                                        decoding="async"
                                         className="object-cover transition-transform hover:scale-105 duration-500"
                                     />
                                 </div>

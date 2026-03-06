@@ -8,11 +8,6 @@ import { Footer } from "@/components/layout/footer";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import { WhatsAppDirect } from "@/components/whatsapp-direct";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -95,6 +90,7 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <body
         className={`${outfit.variable} ${geistMono.variable} font-sans antialiased min-h-screen flex flex-col`}
+        suppressHydrationWarning
       >
         {/* Skip to Content - WCAG 2.1 AA Accessibility */}
         <a

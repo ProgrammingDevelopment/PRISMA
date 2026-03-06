@@ -1,6 +1,7 @@
 /**
- * PRISMA AI Service Client (Offline/Mock Version)
- * Mock implementation for frontend-only deployment
+ * PRISMA AI Service Client
+ * Calls local Ollama AI via /api/chat endpoint
+ * Falls back to mock responses when backend is unavailable
  */
 
 // Types
@@ -44,7 +45,7 @@ export interface ClusterResult {
     segment_id: number;
 }
 
-// Mock responses for surat-related queries
+// Mock responses for surat-related queries (fallback)
 const SURAT_RESPONSES: Record<string, string> = {
     'domisili': 'Untuk Surat Keterangan Domisili, Anda memerlukan: nama lengkap, alamat, dan lama tinggal. Silakan download template "Surat Keterangan Domisili" di daftar template.',
     'sktm': 'Untuk SKTM (Surat Keterangan Tidak Mampu), Anda perlu menyiapkan: nama, alamat, pekerjaan, dan penghasilan. Template tersedia di kategori Administrasi.',
@@ -54,13 +55,40 @@ const SURAT_RESPONSES: Record<string, string> = {
     'keamanan': 'Untuk Laporan Keamanan, Anda perlu mengisi: kronologi kejadian, tanggal kejadian, nama pelapor, dan nomor telepon.',
 };
 
-// API Client (Mock Version)
+// API Client — Real Ollama + Mock Fallback
 class AIServiceClient {
+    private chatApiUrl = '/api/chat';
+
     /**
-     * Chat with PRISMA virtual assistant (Mock)
+     * Chat with PRISMA virtual assistant (Ollama AI)
+     * Falls back to mock if backend is unavailable
      */
     async chat(message: string): Promise<ChatResponse> {
-        // Simple keyword matching for surat-related queries
+        try {
+            const res = await fetch(this.chatApiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message }),
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                return {
+                    user_input: message,
+                    response: data.reply || 'Tidak ada respons.',
+                    intent: 'ai_response',
+                    confidence: 0.95
+                };
+            }
+        } catch {
+            // Fall through to mock
+        }
+
+        // Fallback: simple keyword matching
+        return this._mockChat(message);
+    }
+
+    private _mockChat(message: string): ChatResponse {
         const lowerMessage = message.toLowerCase();
         let response = 'Silakan cari template surat yang Anda butuhkan di daftar template di atas. Gunakan fitur pencarian untuk menemukan surat yang sesuai.';
         let intent = 'general';
@@ -73,7 +101,6 @@ class AIServiceClient {
             }
         }
 
-        // Check for general keywords
         if (lowerMessage.includes('cara') || lowerMessage.includes('bagaimana')) {
             response = 'Untuk menggunakan template surat:\n1. Download template dalam format .docx atau .pdf\n2. Isi field yang diperlukan\n3. Cetak dan serahkan ke sekretariat RT\n4. Ambil surat yang sudah jadi dalam 1-2 hari kerja';
             intent = 'how_to';
@@ -84,14 +111,11 @@ class AIServiceClient {
             intent = 'help';
         }
 
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-
         return {
             user_input: message,
             response,
             intent,
-            confidence: 0.85
+            confidence: 0.7
         };
     }
 
@@ -108,10 +132,19 @@ class AIServiceClient {
     }
 
     /**
-     * Check if AI backend is healthy (Mock - always returns false)
+     * Check if AI backend (Ollama) is healthy
      */
     async healthCheck(): Promise<boolean> {
-        return false; // Backend not available in mock mode
+        try {
+            const res = await fetch(this.chatApiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: 'ping' }),
+            });
+            return res.ok;
+        } catch {
+            return false;
+        }
     }
 }
 

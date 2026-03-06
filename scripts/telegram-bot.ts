@@ -3,7 +3,6 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
-import { GoogleGenerativeAI, Content } from '@google/generative-ai';
 
 // --- AUTO-LOAD TOKEN FROM .env.bot ---
 dotenv.config({ path: path.resolve(__dirname, '..', '.env.bot') });
@@ -20,30 +19,49 @@ const bot = new TelegramBot(token, { polling: true });
 const BOT_START_TIME = Date.now();
 let totalMessages = 0;
 
-console.log('🤖 PRISMA RT 04 - Real-Time Intelligent Bot');
-console.log('   Mode: Real-Time Data + Gemini AI + Broadcast');
+console.log('🤖 PRISMA RT 04 - Real-Time Intelligent Bot (@mayoran04Bot)');
+console.log('   Mode: Real-Time Data + Ollama AI (kimi-k2.5:cloud) + Broadcast');
 console.log('   Security: Token loaded from environment');
 
-// --- GEMINI AI INTEGRATION ---
-const geminiApiKey = process.env.GEMINI_API_KEY;
-if (!geminiApiKey) {
-    console.warn('⚠️ GEMINI_API_KEY not found. AI Chat will be disabled.');
-}
-const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
-const aiModel = genAI ? genAI.getGenerativeModel({ model: "gemini-2.5-flash" }) : null;
+// --- OLLAMA AI INTEGRATION ---
+const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://localhost:11434/api/chat';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'kimi-k2.5:cloud';
+const OLLAMA_FALLBACK_MODEL = 'llama3.2:1b';
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || '';
+let aiEnabled = true;
 
-// --- CHAT HISTORY (per user, last 10 messages) ---
-const chatHistory: Record<number, Content[]> = {};
+// Quick health check on startup
+(async () => {
+    try {
+        const res = await fetch(OLLAMA_API_URL.replace('/api/chat', '/api/tags'));
+        if (res.ok) {
+            console.log(`   ✅ Ollama connected: ${OLLAMA_MODEL}`);
+        } else {
+            console.warn('   ⚠️ Ollama reachable but returned error. AI may not work.');
+            aiEnabled = false;
+        }
+    } catch {
+        console.warn('   ⚠️ Ollama not reachable. AI Chat will fallback to menu.');
+        aiEnabled = false;
+    }
+})();
+
+// --- CHAT HISTORY (per user, last 10 messages, Ollama format) ---
+interface OllamaMessage {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+}
+const chatHistory: Record<number, OllamaMessage[]> = {};
 const MAX_HISTORY = 10;
 
-function getUserHistory(chatId: number): Content[] {
+function getUserHistory(chatId: number): OllamaMessage[] {
     if (!chatHistory[chatId]) chatHistory[chatId] = [];
     return chatHistory[chatId];
 }
 
-function addToHistory(chatId: number, role: 'user' | 'model', text: string) {
+function addToHistory(chatId: number, role: 'user' | 'assistant', text: string) {
     const history = getUserHistory(chatId);
-    history.push({ role, parts: [{ text }] });
+    history.push({ role, content: text });
     // Keep only last MAX_HISTORY entries
     if (history.length > MAX_HISTORY * 2) {
         chatHistory[chatId] = history.slice(-MAX_HISTORY * 2);
@@ -233,8 +251,9 @@ const userState: Record<number, { step: string; data?: Record<string, string> }>
 bot.onText(/\/start/, (msg) => {
     totalMessages++;
     bot.sendMessage(msg.chat.id,
-        `👋 <b>Selamat Datang di Bot PRISMA RT 04!</b>\n\n` +
-        `Saya adalah <b>Siaga</b>, asisten virtual cerdas berbasis AI yang siap membantu kebutuhan administrasi dan informasi Anda 24 jam.\n\n` +
+        `👋 <b>Selamat Datang di Bot PRISMA RT 04!</b>\n` +
+        `<i>@mayoran04Bot</i>\n\n` +
+        `Saya adalah <b>Siaga</b>, asisten virtual cerdas berbasis AI (Ollama) yang siap membantu kebutuhan administrasi dan informasi Anda 24 jam.\n\n` +
         `🤖 Anda bisa bertanya apa saja tentang RT 04!\n` +
         `📋 Atau gunakan menu di bawah:\n`,
         { parse_mode: 'HTML', ...mainMenu }
@@ -337,13 +356,14 @@ bot.onText(/\/status/, (msg) => {
     const data = loadData();
 
     bot.sendMessage(msg.chat.id,
-        `📊 <b>STATUS SISTEM BOT PRISMA</b>\n\n` +
+        `📊 <b>STATUS SISTEM BOT PRISMA</b>\n` +
+        `<i>@mayoran04Bot</i>\n\n` +
         `⏱ <b>Uptime:</b> ${hours}j ${minutes}m ${seconds}s\n` +
         `💬 <b>Total Pesan:</b> ${totalMessages}\n` +
         `👥 <b>Subscriber:</b> ${data.subscribers.length} warga\n` +
         `📰 <b>Pengumuman:</b> ${data.announcements.length} aktif\n` +
         `🧠 <b>Memory:</b> ${(memUsage.heapUsed / 1024 / 1024).toFixed(1)} MB\n` +
-        `🤖 <b>AI Engine:</b> ${aiModel ? '✅ Gemini Active' : '❌ Offline'}\n` +
+        `🤖 <b>AI Engine:</b> ${aiEnabled ? `✅ Ollama (${OLLAMA_MODEL})` : '❌ Offline'}\n` +
         `🌐 <b>Monitor:</b> ${WEBSITE_URL}\n\n` +
         `<i>Bot berjalan sejak ${new Date(BOT_START_TIME).toLocaleString('id-ID')}</i>`,
         { parse_mode: 'HTML' }
@@ -446,9 +466,9 @@ bot.on('message', (msg) => {
     }
 });
 
-// --- AI CHAT WITH FULL CONTEXT ---
+// --- AI CHAT WITH FULL CONTEXT (OLLAMA) ---
 async function handleAIChat(chatId: number, text: string, username: string) {
-    if (!aiModel) {
+    if (!aiEnabled) {
         bot.sendMessage(chatId, "Maaf, fitur AI sedang tidak aktif. Silakan pilih menu di bawah ini:", mainMenu);
         return;
     }
@@ -458,7 +478,7 @@ async function handleAIChat(chatId: number, text: string, username: string) {
     // Load real-time data for context
     const data = loadData();
 
-    const systemPrompt = `Anda adalah "Siaga", asisten virtual cerdas untuk RT 04 RW 09 Kelurahan Kemayoran, Jakarta Pusat.
+    const systemPrompt = `Anda adalah "Siaga", asisten virtual cerdas untuk RT 04 RW 09 Kelurahan Kemayoran, Jakarta Pusat. Bot Telegram: @mayoran04Bot.
 
 KONTEKS DATA REAL-TIME RT 04:
 
@@ -489,25 +509,80 @@ ATURAN:
 5. Jika relevan, arahkan ke fitur bot (contoh: ketik /register untuk mendaftar)
 6. Nama warga yang bertanya: ${username}`;
 
+    const COMPACT_SYSTEM_PROMPT = `Anda adalah "Siaga", asisten RT 04 Kemayoran.
+DATA RT 04:
+- Pengumuman: ${data.announcements.length}
+- Saldo: ${data.finance.balance}
+- Sekretariat: Gg. Bugis No.95
+ATURAN: Ramah, gunakan DATA, jangan mengarang.`;
+
     // Add user message to history
     addToHistory(chatId, 'user', text);
 
     try {
-        const chat = aiModel.startChat({
-            history: getUserHistory(chatId).slice(0, -1), // exclude last (current) message
-            systemInstruction: systemPrompt,
-        });
+        // Build messages array: system + history
+        const messages: OllamaMessage[] = [
+            { role: 'system', content: systemPrompt },
+            ...getUserHistory(chatId)
+        ];
 
         // Keep typing during generation
         const typingInterval = setInterval(() => {
             bot.sendChatAction(chatId, 'typing').catch(() => { });
         }, 4000);
 
-        const result = await chat.sendMessage(text);
+        let response = await fetch(OLLAMA_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(OLLAMA_API_KEY ? { 'Authorization': `Bearer ${OLLAMA_API_KEY}` } : {})
+            },
+            body: JSON.stringify({
+                model: OLLAMA_MODEL,
+                messages,
+                stream: false
+            })
+        });
+
+        let result;
+        let isFallbackActive = false;
+
+        if (!response.ok && (response.status === 429 || response.status === 503)) {
+            // Fallback to local model
+            console.warn(`Primary model ${OLLAMA_MODEL} returned ${response.status}, falling back to ${OLLAMA_FALLBACK_MODEL}...`);
+
+            // Switch to compact prompt
+            messages[0].content = COMPACT_SYSTEM_PROMPT;
+
+            const fallbackResponse = await fetch('http://localhost:11434/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: OLLAMA_FALLBACK_MODEL,
+                    messages,
+                    stream: false
+                })
+            });
+            if (!fallbackResponse.ok) {
+                throw new Error(`Fallback model also failed: ${fallbackResponse.status}`);
+            }
+            result = await fallbackResponse.json();
+            isFallbackActive = true;
+        } else if (!response.ok) {
+            throw new Error(`Ollama API returned ${response.status} ${response.statusText}`);
+        } else {
+            result = await response.json();
+        }
+
         clearInterval(typingInterval);
 
-        const responseText = result.response.text();
-        addToHistory(chatId, 'model', responseText);
+        let responseText = result.message?.content || 'Maaf, saya tidak bisa menjawab saat ini.';
+
+        if (isFallbackActive) {
+            responseText = `<i>(Mode: Hemat)</i>\n\n${responseText}`;
+        }
+
+        addToHistory(chatId, 'assistant', responseText);
 
         // Send with Markdown, fallback to plain text if it fails
         bot.sendMessage(chatId, responseText, { parse_mode: 'Markdown' })
@@ -515,7 +590,7 @@ ATURAN:
                 bot.sendMessage(chatId, responseText);
             });
     } catch (error) {
-        console.error("Gemini AI Error:", error);
+        console.error("Ollama AI Error:", error);
         bot.sendMessage(chatId, "Maaf, terjadi kendala pada AI. Silakan coba lagi atau gunakan menu yang tersedia.", mainMenu);
     }
 }

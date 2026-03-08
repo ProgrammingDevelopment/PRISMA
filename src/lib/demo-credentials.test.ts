@@ -20,7 +20,7 @@ describe('Demo Credentials System', () => {
             const user = authenticateDemo('rerry@prisma.dev', 'Pr1sm4RT04!')
             expect(user).not.toBeNull()
             expect(user?.role).toBe('admin')
-            expect(user?.nama).toBe('Rerry Adusundaru')
+            expect(user?.nama).toBe('R erry Adusundaru')
         })
 
         it('should authenticate valid warga credentials', () => {

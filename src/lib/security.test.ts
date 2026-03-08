@@ -26,9 +26,9 @@ import {
 describe('sanitizeInput - XSS Prevention', () => {
     it('should return empty string for null/undefined/non-string', () => {
         expect(sanitizeInput('')).toBe('')
-        expect(sanitizeInput(null as any)).toBe('')
-        expect(sanitizeInput(undefined as any)).toBe('')
-        expect(sanitizeInput(123 as any)).toBe('')
+        expect(sanitizeInput(null as unknown as string)).toBe('')
+        expect(sanitizeInput(undefined as unknown as string)).toBe('')
+        expect(sanitizeInput(123 as unknown as string)).toBe('')
     })
 
     it('should strip <script> tags', () => {
@@ -120,7 +120,7 @@ describe('sanitizeObject', () => {
     it('should handle nested objects', () => {
         const obj = { user: { name: '<b>bold</b>' } }
         const result = sanitizeObject(obj)
-        expect((result.user as any).name).not.toContain('<b>')
+        expect((result.user as Record<string, string>).name).not.toContain('<b>')
     })
 
     it('should handle empty object', () => {

@@ -11,7 +11,8 @@ import {
     Wallet,
     Shield,
     Users,
-    ChevronRight
+    ChevronRight,
+    Lightbulb
 } from "lucide-react"
 
 interface OfficialMember {
@@ -37,7 +38,7 @@ const officials: OfficialMember[] = [
         accent: "ring-blue-500/30",
     },
     {
-        name: "Ibu Sekretaris RT 04",
+        name: "Ibu Melly Nainggolan",
         role: "Sekretaris",
         roleId: "sekretaris",
         icon: BookOpen,
@@ -47,7 +48,7 @@ const officials: OfficialMember[] = [
         accent: "ring-emerald-500/30",
     },
     {
-        name: "Bpk. Bendahara RT 04",
+        name: "Ibu Retno Fellyanti",
         role: "Bendahara",
         roleId: "bendahara",
         icon: Wallet,
@@ -57,14 +58,14 @@ const officials: OfficialMember[] = [
         accent: "ring-amber-500/30",
     },
     {
-        name: "Bpk. Keamanan RT 04",
-        role: "Koordinator Keamanan",
-        roleId: "keamanan",
-        icon: Shield,
+        name: "Bpk. Dika",
+        role: "Riset & Pengembangan (R&D)",
+        roleId: "rnd",
+        icon: Lightbulb,
         phone: "6287872004448",
-        description: "Mengkoordinasikan jadwal ronda, CCTV, dan penanganan laporan keamanan lingkungan.",
-        gradient: "from-red-600 to-rose-700",
-        accent: "ring-red-500/30",
+        description: "Bertanggung jawab atas riset, inovasi, pengembangan program lingkungan, serta penanganan CCTV.",
+        gradient: "from-purple-600 to-fuchsia-700",
+        accent: "ring-purple-500/30",
     },
 ]
 

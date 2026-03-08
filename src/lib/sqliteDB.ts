@@ -1,8 +1,19 @@
 import { WargaData, SecurityReportSubmission } from '../Services/databaseService';
 
-// Define types locally
-type Database = any;
-type SqlJsStatic = any;
+type Statement = {
+    bind: (params?: unknown[]) => void;
+    step: () => boolean;
+    getAsObject: () => any;
+    free: () => void;
+};
+type Database = {
+    run: (sql: string, params?: unknown[]) => void;
+    prepare: (sql: string) => Statement;
+    export: () => Uint8Array;
+};
+type SqlJsStatic = {
+    Database: new (data?: Uint8Array) => Database;
+};
 
 let db: Database | null = null;
 let SQL: SqlJsStatic | null = null;
@@ -12,7 +23,9 @@ const DB_NAME = 'prisma_local_db';
 // Declare global for the script loaded in layout
 declare global {
     interface Window {
-        initSqlJs: any;
+        initSqlJs: (config?: { locateFile?: (file: string) => string }) => Promise<SqlJsStatic>;
+        btoa: (s: string) => string;
+        atob: (s: string) => string;
     }
 }
 
@@ -90,7 +103,7 @@ export const SqliteDB = {
         const base64 = this.uint8ArrayToBase64(data);
         try {
             localStorage.setItem(DB_NAME, base64);
-        } catch (e) {
+        } catch {
             console.warn("Database too large for LocalStorage. Use Export to save.");
         }
     },
@@ -122,7 +135,7 @@ export const SqliteDB = {
     },
 
     // ======== CRUD HELPERS ========
-    exec(sql: string, params: any[] = []) {
+    exec(sql: string, params: unknown[] = []) {
         if (!db) return [];
         this.init(); // Ensure init
         const stmt = db.prepare(sql);
@@ -136,7 +149,7 @@ export const SqliteDB = {
         return results;
     },
 
-    run(sql: string, params: any[] = []) {
+    run(sql: string, params: unknown[] = []) {
         if (!db) return;
         db.run(sql, params);
         this.save();

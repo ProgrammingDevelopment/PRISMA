@@ -85,7 +85,7 @@ jobs:
       run: npm ci
 
     - name: 🔐 npm Audit (Security Vulnerabilities)
-      run: npm audit --audit-level=high || true
+      run: npm audit --audit-level=high || echo "Vulnerabilities found but continuing pipeline"
 
     - name: 🕵️ Check for Hardcoded Secrets
       run: |
@@ -102,10 +102,10 @@ jobs:
         echo "=== Verifying _headers file ==="
         if [ -f "public/_headers" ]; then
           echo "✅ _headers file exists"
-          grep -c "X-Frame-Options" public/_headers && echo "✅ Clickjacking protection"
-          grep -c "Content-Security-Policy" public/_headers && echo "✅ CSP header"
-          grep -c "Strict-Transport-Security" public/_headers && echo "✅ HSTS header"
-          grep -c "X-Content-Type-Options" public/_headers && echo "✅ MIME sniffing protection"
+          if grep -q "X-Frame-Options" public/_headers; then echo "✅ Clickjacking protection"; else echo "❌ Missing X-Frame-Options"; exit 1; fi
+          if grep -q "Content-Security-Policy" public/_headers; then echo "✅ CSP header"; else echo "❌ Missing CSP"; exit 1; fi
+          if grep -q "Strict-Transport-Security" public/_headers; then echo "✅ HSTS header"; else echo "❌ Missing HSTS"; exit 1; fi
+          if grep -q "X-Content-Type-Options" public/_headers; then echo "✅ MIME sniffing protection"; else echo "❌ Missing X-Content-Type-Options"; exit 1; fi
         else
           echo "❌ _headers file missing!"
           exit 1

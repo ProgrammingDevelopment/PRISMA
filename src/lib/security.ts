@@ -405,7 +405,7 @@ export function initSecurityProtections() {
         const originalWarn = console.warn
         const noop = () => { }
             ; (['log', 'debug', 'info', 'trace', 'dir', 'table'] as const).forEach(method => {
-                (console as any)[method] = noop
+                (console as unknown as Record<string, typeof noop>)[method] = noop
             })
         console.error = originalError
         console.warn = originalWarn

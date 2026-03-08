@@ -67,17 +67,17 @@
         },
         {
             "role": "Sekretaris",
-            "name": "Ibu Sekretaris",
+            "name": "Ibu Melly Nainggolan",
             "contact": "6287872004448"
         },
         {
             "role": "Bendahara",
-            "name": "Bpk. Bendahara",
+            "name": "Ibu Retno Fellyanti",
             "contact": "6287872004448"
         },
         {
-            "role": "Keamanan",
-            "name": "Koordinator Keamanan",
+            "role": "Riset & Pengembangan (R&D)",
+            "name": "Bpk. Dika",
             "contact": "6287872004448"
         }
     ],
@@ -105,7 +105,7 @@
             }
         ],
         "payment_methods": [
-            "Cash ke Bendahara (Pak Budi)",
+            "Cash ke Bendahara (Ibu Retno)",
             "Transfer BCA: 123-456-7890 (a.n RT 04)",
             "QRIS (Scan di papan pengumuman)"
         ]

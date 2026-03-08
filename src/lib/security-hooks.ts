@@ -315,21 +315,10 @@ export function useSecureApi<T>() {
 // ============================================
 
 export function usePasswordStrength(password: string): PasswordStrength {
-    const [strength, setStrength] = useState<PasswordStrength>({
-        score: 0,
-        feedback: [],
-        isStrong: false
-    })
-
-    useEffect(() => {
-        if (password) {
-            setStrength(validatePasswordStrength(password))
-        } else {
-            setStrength({ score: 0, feedback: [], isStrong: false })
-        }
-    }, [password])
-
-    return strength
+    if (!password) {
+        return { score: 0, feedback: [], isStrong: false }
+    }
+    return validatePasswordStrength(password)
 }
 
 // ============================================

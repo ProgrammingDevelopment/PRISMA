@@ -42,6 +42,11 @@ const NewResidentGuide = dynamic(
   { loading: () => <SectionSkeleton height="h-[500px]" /> }
 )
 
+const GalleryShowcase = dynamic(
+  () => import("@/components/home/gallery-showcase").then(mod => mod.GalleryShowcase),
+  { loading: () => <SectionSkeleton height="h-[500px]" /> }
+)
+
 const ContactSection = dynamic(
   () => import("@/components/home/contact-section").then(mod => mod.ContactSection),
   { loading: () => <SectionSkeleton height="h-[400px]" /> }
@@ -82,6 +87,9 @@ export default function Home() {
 
       {/* Activity Schedule - Kerja Bakti, Ronda, etc. */}
       <ActivitySchedule />
+
+      {/* Gallery - Dokumentasi Kegiatan */}
+      <GalleryShowcase />
 
       {/* Strategic Recommendations Section */}
       <section id="rekomendasi-strategis">

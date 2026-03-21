@@ -1,8 +1,3 @@
-/**
- * Security Module Tests
- * Covers: sanitizeInput, checkRateLimit, CSRF, password validation, data masking
- * Methodology: ISTQB Equivalence Partitioning + Boundary Value Analysis
- */
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
     sanitizeInput,
@@ -20,9 +15,7 @@ import {
     getAuditLog,
 } from './security'
 
-// ============================================
-// 1. INPUT SANITIZATION TESTS (PortSwigger: XSS)
-// ============================================
+
 describe('sanitizeInput - XSS Prevention', () => {
     it('should return empty string for null/undefined/non-string', () => {
         expect(sanitizeInput('')).toBe('')
@@ -106,9 +99,7 @@ describe('sanitizeInput - XSS Prevention', () => {
     })
 })
 
-// ============================================
-// 2. OBJECT SANITIZATION TESTS
-// ============================================
+
 describe('sanitizeObject', () => {
     it('should sanitize all string values in an object', () => {
         const obj = { name: '<script>evil</script>', age: 25 }
@@ -129,9 +120,7 @@ describe('sanitizeObject', () => {
     })
 })
 
-// ============================================
-// 3. RATE LIMITING TESTS (PortSwigger: Brute Force)
-// ============================================
+
 describe('checkRateLimit', () => {
     beforeEach(() => {
         resetRateLimit('test_action')
@@ -179,9 +168,7 @@ describe('checkRateLimit', () => {
     })
 })
 
-// ============================================
-// 4. PASSWORD VALIDATION TESTS (ISTQB: Boundary Value)
-// ============================================
+
 describe('validatePasswordStrength', () => {
     it('should accept strong passwords', () => {
         const result = validatePasswordStrength('Str0ng!Pass')
@@ -216,9 +203,7 @@ describe('validatePasswordStrength', () => {
     })
 })
 
-// ============================================
-// 5. DATA MASKING TESTS (PortSwigger: Info Disclosure)
-// ============================================
+
 describe('Data Masking', () => {
     describe('maskPhoneNumber', () => {
         it('should mask phone number keeping last 4 digits', () => {
@@ -263,9 +248,7 @@ describe('Data Masking', () => {
     })
 })
 
-// ============================================
-// 6. CSRF TOKEN TESTS
-// ============================================
+
 describe('CSRF Tokens', () => {
     it('should generate a CSRF token', () => {
         const token = generateCSRFToken()
@@ -284,9 +267,7 @@ describe('CSRF Tokens', () => {
     })
 })
 
-// ============================================
-// 7. AUDIT LOG TESTS
-// ============================================
+
 describe('Security Audit Log', () => {
     it('should log security events', () => {
         logSecurityEvent('test_event', true, 'Test detail')
@@ -310,5 +291,129 @@ describe('Security Audit Log', () => {
         const newestEntry = log[0]
         expect(newestEntry.success).toBe(false)
         expect(newestEntry.action).toBe('brute_force_attempt')
+    })
+})
+
+import { isSSRFSafe, sanitizeServerInput } from '../app/api/middleware'
+
+describe('SSRF Protection - isSSRFSafe', () => {
+    it('should allow safe public URLs', () => {
+        expect(isSSRFSafe('https://api.telegram.org/bot123/sendMessage')).toBe(true)
+        expect(isSSRFSafe('https://example.com/api/data')).toBe(true)
+        expect(isSSRFSafe('http://cdn.example.com/image.jpg')).toBe(true)
+    })
+
+    it('should block localhost and loopback addresses', () => {
+        expect(isSSRFSafe('http://localhost:8080/api')).toBe(false)
+        expect(isSSRFSafe('http://127.0.0.1:3000/data')).toBe(false)
+        expect(isSSRFSafe('http://0.0.0.0/admin')).toBe(false)
+    })
+
+    it('should block private IP ranges', () => {
+        // Class A
+        expect(isSSRFSafe('http://10.0.0.1/internal')).toBe(false)
+        // Class B
+        expect(isSSRFSafe('http://172.16.0.1/secret')).toBe(false)
+        // Class C
+        expect(isSSRFSafe('http://192.168.1.1/admin')).toBe(false)
+    })
+
+    it('should block non-http protocols', () => {
+        expect(isSSRFSafe('file:///etc/passwd')).toBe(false)
+        expect(isSSRFSafe('ftp://internal.server/data')).toBe(false)
+        expect(isSSRFSafe('gopher://evil.com/payload')).toBe(false)
+    })
+
+    it('should block link-local addresses', () => {
+        expect(isSSRFSafe('http://169.254.169.254/metadata')).toBe(false)
+    })
+
+    it('should reject invalid URLs', () => {
+        expect(isSSRFSafe('not-a-url')).toBe(false)
+        expect(isSSRFSafe('')).toBe(false)
+    })
+})
+
+describe('sanitizeServerInput - Server-Side Validation', () => {
+    it('should strip script tags', () => {
+        const input = '<script>alert("xss")</script>Hello'
+        const result = sanitizeServerInput(input)
+        expect(result).not.toContain('<script')
+        expect(result).toContain('Hello')
+    })
+
+    it('should strip event handlers', () => {
+        const input = '<img onload="stealCookies()" src="x">'
+        const result = sanitizeServerInput(input)
+        expect(result).not.toContain('onload')
+    })
+
+    it('should strip javascript: protocol', () => {
+        const input = '<a href="javascript:alert(1)">click me</a>'
+        const result = sanitizeServerInput(input)
+        expect(result).not.toContain('javascript:')
+    })
+
+    it('should remove null bytes', () => {
+        const input = 'clean\0data\0here'
+        const result = sanitizeServerInput(input)
+        expect(result).not.toContain('\0')
+        expect(result).toBe('cleandatahere')
+    })
+
+    it('should enforce max length', () => {
+        const input = 'a'.repeat(2000)
+        const result = sanitizeServerInput(input, 100)
+        expect(result.length).toBeLessThanOrEqual(100)
+    })
+
+    it('should handle empty and non-string inputs', () => {
+        expect(sanitizeServerInput('')).toBe('')
+        expect(sanitizeServerInput(null as unknown as string)).toBe('')
+        expect(sanitizeServerInput(undefined as unknown as string)).toBe('')
+        expect(sanitizeServerInput(123 as unknown as string)).toBe('')
+    })
+})
+
+describe('sanitizeInput - Extended XSS Coverage', () => {
+    it('should block SVG-based XSS', () => {
+        const input = '<svg onload=alert(1)>'
+        expect(sanitizeInput(input)).not.toContain('onload')
+    })
+
+    it('should block img onerror XSS', () => {
+        const input = '<img src=x onerror=alert(1)>'
+        expect(sanitizeInput(input)).not.toContain('onerror')
+    })
+
+    it('should block body onload XSS', () => {
+        const input = '<body onload=alert(1)>'
+        expect(sanitizeInput(input)).not.toContain('onload')
+    })
+
+    it('should block iframe injection', () => {
+        const input = '<iframe src="https://evil.com"></iframe>'
+        expect(sanitizeInput(input)).not.toContain('iframe')
+    })
+
+    it('should block base64 encoded XSS in data URI', () => {
+        const input = '<a href="data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==">click</a>'
+        // Should not execute even if kept
+        expect(sanitizeInput(input)).not.toContain('PHNjcmlwdD5')
+    })
+
+    it('should block mixed case bypass attempts', () => {
+        const input = '<ScRiPt>alert(1)</ScRiPt>'
+        expect(sanitizeInput(input)).not.toContain('<ScRiPt>')
+    })
+
+    it('should block encoded event handlers', () => {
+        const input = '<div onmouseover="alert(1)">hover me</div>'
+        expect(sanitizeInput(input)).not.toContain('onmouseover')
+    })
+
+    it('should handle multiple nested scripts', () => {
+        const input = '<script><script>alert(1)</script></script>'
+        expect(sanitizeInput(input)).not.toContain('<script')
     })
 })

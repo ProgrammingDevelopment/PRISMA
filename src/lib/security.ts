@@ -10,7 +10,7 @@
  */
 
 // ============================================
-// 1. SECURE ENCRYPTION (OWASP A02)
+// Encryption
 // ============================================
 
 // SECURITY FIX: Key derived at runtime from environment + browser fingerprint
@@ -66,7 +66,7 @@ export function decryptData(encryptedData: string): string {
 }
 
 // ============================================
-// 2. SECURE STORAGE (OWASP A02, A07)
+// Secure Storage
 // ============================================
 
 interface SecureStorageOptions {
@@ -152,7 +152,7 @@ const memoryStorage = {
 }
 
 // ============================================
-// 3. SESSION FINGERPRINTING (Anti-OSINT, Anti-Hijacking)
+// Session Fingerprinting
 // ============================================
 
 function generateFingerprint(): string {
@@ -180,7 +180,7 @@ function simpleHash(str: string): string {
 }
 
 // ============================================
-// 4. INPUT SANITIZATION (OWASP A03 - Injection)
+// Input Sanitization
 // ============================================
 
 export function sanitizeInput(input: string): string {
@@ -203,14 +203,16 @@ export function sanitizeInput(input: string): string {
     }
 
     return decoded
-        // Remove script tags (including nested/malformed)
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-        // Remove event handlers (including data- attributes with JS)
-        .replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '')
+        // Remove script tags
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        // Remove iframe tags
+        .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+        // Remove event handlers (quoted and unquoted)
+        .replace(/\bon[a-z]+\s*=\s*(?:'[^']*'|"[^"]*"|[^\s>]+)/gi, '')
         // Remove javascript: protocol in any attribute
         .replace(/javascript\s*:/gi, '')
-        // Remove data: URIs that could contain scripts
-        .replace(/data\s*:\s*text\/html/gi, '')
+        // Remove data: URIs that could contain scripts or base64 payloads
+        .replace(/data\s*:[^"'>\s]+/gi, '')
         // Encode HTML entities
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -240,7 +242,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
 }
 
 // ============================================
-// 5. RATE LIMITING (OWASP A07 - Brute Force Protection)
+// Rate Limiting
 // ============================================
 
 interface RateLimitEntry {
@@ -308,7 +310,7 @@ export function resetRateLimit(action: string) {
 }
 
 // ============================================
-// 6. DATA MASKING (OSINT Protection)
+// Data Masking
 // ============================================
 
 export function maskPhoneNumber(phone: string): string {
@@ -334,7 +336,7 @@ export function maskName(name: string): string {
 }
 
 // ============================================
-// 7. SECURE CREDENTIAL HANDLER
+// Credential Handling
 // ============================================
 
 export interface SecureCredentials {
@@ -367,7 +369,7 @@ export function clearCredentials() {
 }
 
 // ============================================
-// 8. ANTI-REVERSE ENGINEERING MEASURES
+// Anti-Tampering
 // ============================================
 
 export function initSecurityProtections() {
@@ -413,7 +415,7 @@ export function initSecurityProtections() {
 }
 
 // ============================================
-// 9. CSRF TOKEN MANAGEMENT
+// CSRF Token Management
 // ============================================
 
 export function generateCSRFToken(): string {
@@ -440,7 +442,7 @@ export function validateCSRFToken(token: string): boolean {
 }
 
 // ============================================
-// 10. SECURE FETCH WRAPPER
+// Secure Fetch
 // ============================================
 
 export async function secureFetch(
@@ -469,7 +471,7 @@ export async function secureFetch(
 }
 
 // ============================================
-// 11. PASSWORD STRENGTH VALIDATOR (OWASP)
+// Password Strength Validation
 // ============================================
 
 export interface PasswordStrength {
@@ -511,7 +513,7 @@ export function validatePasswordStrength(password: string): PasswordStrength {
 }
 
 // ============================================
-// 12. AUDIT LOG (For Security Monitoring)
+// Audit Log
 // ============================================
 
 interface AuditEntry {

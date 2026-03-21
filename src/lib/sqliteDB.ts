@@ -3,7 +3,7 @@ import { WargaData, SecurityReportSubmission } from '../Services/databaseService
 type Statement = {
     bind: (params?: unknown[]) => void;
     step: () => boolean;
-    getAsObject: () => any;
+    getAsObject: () => Record<string, unknown>;
     free: () => void;
 };
 type Database = {
@@ -75,25 +75,65 @@ export const SqliteDB = {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nama TEXT NOT NULL,
                 alamat TEXT,
-                status TEXT,
-                telepon TEXT
+                status TEXT DEFAULT 'Baru',
+                telepon TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
             );
 
             CREATE TABLE IF NOT EXISTS security_reports (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                jenis_kejadian TEXT,
+                jenis_kejadian TEXT NOT NULL,
                 lokasi TEXT,
                 tanggal_kejadian TEXT,
-                status TEXT,
-                priority TEXT,
-                nama_pelapor TEXT,
+                status TEXT DEFAULT 'Pending',
+                priority TEXT DEFAULT 'Medium',
+                nama_pelapor TEXT NOT NULL,
                 telepon_pelapor TEXT,
-                kronologi TEXT
+                kronologi TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
             );
-            
-            -- Add more tables as needed for finance, letters, etc.
+
+            CREATE TABLE IF NOT EXISTS pengurus (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nama TEXT NOT NULL,
+                jabatan TEXT NOT NULL,
+                periode TEXT,
+                kontak TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS finance_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tanggal TEXT NOT NULL,
+                keterangan TEXT NOT NULL,
+                kategori TEXT,
+                tipe TEXT CHECK(tipe IN ('pemasukan', 'pengeluaran')) NOT NULL,
+                jumlah INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS letters (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                template_id TEXT NOT NULL,
+                pemohon TEXT NOT NULL,
+                status TEXT DEFAULT 'Pending',
+                data_json TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
         `;
         db.run(schema);
+
+        // Create indexes for frequently queried columns
+        const indexes = `
+            CREATE INDEX IF NOT EXISTS idx_warga_nama ON warga(nama);
+            CREATE INDEX IF NOT EXISTS idx_warga_status ON warga(status);
+            CREATE INDEX IF NOT EXISTS idx_security_status ON security_reports(status);
+            CREATE INDEX IF NOT EXISTS idx_security_priority ON security_reports(priority);
+            CREATE INDEX IF NOT EXISTS idx_security_date ON security_reports(tanggal_kejadian);
+            CREATE INDEX IF NOT EXISTS idx_finance_tipe ON finance_transactions(tipe);
+            CREATE INDEX IF NOT EXISTS idx_finance_tanggal ON finance_transactions(tanggal);
+            CREATE INDEX IF NOT EXISTS idx_letters_status ON letters(status);
+        `;
+        db.run(indexes);
     },
 
     // ======== UTILITIES ========
@@ -134,10 +174,20 @@ export const SqliteDB = {
         this.save();
     },
 
+    // ======== DEBOUNCED SAVE ========
+    _saveTimer: null as ReturnType<typeof setTimeout> | null,
+
+    debouncedSave() {
+        if (this._saveTimer) clearTimeout(this._saveTimer);
+        this._saveTimer = setTimeout(() => {
+            this.save();
+            this._saveTimer = null;
+        }, 500); // Batch saves within 500ms window
+    },
+
     // ======== CRUD HELPERS ========
     exec(sql: string, params: unknown[] = []) {
         if (!db) return [];
-        this.init(); // Ensure init
         const stmt = db.prepare(sql);
         stmt.bind(params);
         const results = [];
@@ -145,21 +195,24 @@ export const SqliteDB = {
             results.push(stmt.getAsObject());
         }
         stmt.free();
-        this.save(); // Auto-save on every write? Maybe optimize later.
+        // Use debounced save to avoid excessive localStorage writes
+        if (sql.trim().toUpperCase().startsWith('SELECT') === false) {
+            this.debouncedSave();
+        }
         return results;
     },
 
     run(sql: string, params: unknown[] = []) {
         if (!db) return;
         db.run(sql, params);
-        this.save();
+        this.debouncedSave();
     },
 
     // ======== SPECIFIC DATA METHODS ========
 
     // WARGA
     getAllWarga(): WargaData[] {
-        return this.exec("SELECT * FROM warga") as WargaData[];
+        return this.exec("SELECT * FROM warga") as unknown as WargaData[];
     },
 
     addWarga(warga: Partial<WargaData>) {

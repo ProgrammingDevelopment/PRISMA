@@ -8,6 +8,7 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
+  output: 'export',
   images: {
     unoptimized: true,
   },
@@ -19,28 +20,7 @@ const nextConfig: NextConfig = {
   compress: true,
   // Security: remove X-Powered-By header
   poweredByHeader: false,
-  // Security headers for all routes
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-          { key: 'X-XSS-Protection', value: '1; mode=block' },
-        ],
-      },
-      {
-        source: '/api/(.*)',
-        headers: [
-          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-        ],
-      },
-    ];
-  },
+  // Security headers for all routes (now managed by _headers on Cloudflare Pages/Static hosting)
   // Structured logging
   logging: {
     fetches: {

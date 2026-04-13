@@ -2,23 +2,21 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
     ArrowLeft,
-    Folder,
     FileText,
     Shield,
-    DollarSign,
     Users,
     ChevronRight,
     Lock,
     BarChart3,
-    Search,
     Clock,
-    CheckCircle,
-    AlertTriangle
+    CheckCircle
 } from "lucide-react"
+import { getSuratRepository } from "@/models/repositories/SuratRepository"
+import { getKeamananRepository } from "@/models/repositories/KeamananRepository"
 
 interface ServiceCard {
     id: string;
@@ -85,30 +83,27 @@ export default function LayananPage() {
     });
 
     useEffect(() => {
-        async function fetchStats() {
+        async function loadStats() {
             try {
-                // Fetch letter templates count
-                const suratRes = await fetch('/api/database/surat.json');
-                const suratData = await suratRes.json();
-                if (suratData.success) {
-                    setStats(prev => ({ ...prev, totalTemplates: suratData.data.length }));
-                }
+                // Use repositories instead of direct JSON fetch
+                const suratRepo = getSuratRepository();
+                const keamananRepo = getKeamananRepository();
 
-                // Fetch security stats
-                const securityRes = await fetch('/api/database/keamanan.json');
-                const securityData = await securityRes.json();
-                if (securityData.success) {
-                    setStats(prev => ({
-                        ...prev,
-                        securityReports: securityData.data.total,
-                        reportsProcessed: securityData.data.resolved
-                    }));
-                }
+                const [templates, securityStats] = await Promise.all([
+                    suratRepo.getAll(),
+                    keamananRepo.getStats(),
+                ]);
+
+                setStats({
+                    totalTemplates: templates.length,
+                    securityReports: securityStats.total,
+                    reportsProcessed: securityStats.resolved,
+                });
             } catch (error) {
-                console.error('Failed to fetch stats:', error);
+                console.error('Failed to load stats:', error);
             }
         }
-        fetchStats();
+        loadStats();
     }, []);
 
     return (

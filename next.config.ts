@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next';
 import withSerwistInit from '@serwist/next';
 
+// Suppress harmless Turbopack warning — Serwist is already disabled in non-production via `disable` flag
+process.env.SERWIST_SUPPRESS_TURBOPACK_WARNING = '1';
+
 const withSerwist = withSerwistInit({
   swSrc: 'src/app/sw.ts',
   swDest: 'public/sw.js',

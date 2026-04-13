@@ -4,8 +4,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area" // Keep this for scrollable areas logic if needed
-import { MessageCircle, X, Send, User, Mic, Minimize2, CircleUser } from "lucide-react"
+import { X, Send, Mic, Minimize2, CircleUser } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 type Message = {
@@ -97,7 +96,7 @@ export function Chatbot() {
                 }])
             }
 
-        } catch (error) {
+        } catch {
             setMessages(prev => [...prev, {
                 role: "bot",
                 content: "Maaf, koneksi ke Siaga terputus. Pastikan server backend aktif.",

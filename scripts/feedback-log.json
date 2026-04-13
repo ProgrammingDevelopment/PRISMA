@@ -1,0 +1,31 @@
+{
+  "logs": [
+    {
+      "id": "fb-1774540966673",
+      "chatId": 8536599994,
+      "question": "Menurut mu struktural keuangan di RT 04 itu bagaimana apakah aman atau tidak?",
+      "answer": "Halo Swandaaa! \n\nBerdasarkan data keuangan terbaru RT 04 (update 12 Feb 2026), kondisi keuangan kita cukup **sehat dan aman**, dengan catatan sebagai berikut:\n\n**Indikator Positif:**\n1. **Surplus Operasional** - Pemasukan Rp 4.500.000 lebih besar dari pengeluaran Rp 2.300.000, ada sisa Rp 2.200.000 per periode\n2. **Saldo Kas Mengcover** - Saldo Rp 15.450.000 bisa menutup operasional ~6-7 bulan ke depan jika sewaktu-waktu iuran menurun\n3. **Alokasi Wajar** - 52% untuk kebersihan (wajar), sisanya ",
+      "type": "positive",
+      "topic": "keuangan",
+      "timestamp": "2026-03-26T16:02:46.673Z"
+    },
+    {
+      "id": "fb-1774541168696",
+      "chatId": 8536599994,
+      "question": "bagaimana jika pak RT 4 mengajukan kerjasama edukasi untuk integrasi administratsi tugas tugas RT ke AI apakah dapat di tangani?",
+      "answer": "Halo Swandaaa!\n\nUsulan kerjasama edukasi integrasi AI untuk administrasi RT sangat **mungkin dan positif**. RT 04 saat ini memiliki tim **Riset & Pengembangan (R&D)** yang dipimpin Bpk. Dika yang menangani inovasi teknologi, serta dukungan Ketua RT Bpk. Rerry Adusundaru yang terbuka terhadap digitalisasi.\n\nSilakan ajukan proposal ke **Bpk. Dika (R&D)** atau langsung ke **Ketua RT Bpk. Rerry** di nomor **6287872004448**. Anda juga bisa manfaatkan bot ini (@mayoran04Bot) sebagai pilot project cont",
+      "type": "positive",
+      "topic": "keuangan",
+      "timestamp": "2026-03-26T16:06:08.696Z"
+    },
+    {
+      "id": "fb-1774542314940",
+      "chatId": 8536599994,
+      "question": "oh ya apakah perlu data data warga di kelola dalam sistem blockchain dan tim RnD membuat terms of agreement dan privacy policy untuk prisma bot ini?",
+      "answer": "Untuk skala RT, **blockchain tidak perlu**—terlalu kompleks dan mahal. Database terenkripsi dengan akses terbatas sudah cukup aman untuk administrasi lokal.\n\nNamun, **Terms of Agreement dan Privacy Policy sangat disarankan** dibuat tim R&D (Bpk. Dika). Mengingat bot menangani data pribadi (nama, WA, laporan keuangan), dokumen ini wajib untuk kepatuhan UU Perlindungan Data Pribadi dan transparansi penggunaan data warga.\n\nSilakan koordinasikan dengan **Bpk. Dika (R&D)** di **6287872004448** untuk ",
+      "type": "positive",
+      "topic": "umum",
+      "timestamp": "2026-03-26T16:25:14.940Z"
+    }
+  ]
+}

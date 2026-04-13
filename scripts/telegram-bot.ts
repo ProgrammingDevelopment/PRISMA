@@ -3,6 +3,17 @@ import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
+import {
+    findRelevantKnowledge,
+    buildFewShotPrompt,
+    addKnowledge,
+    penalizeKnowledge,
+    logFeedback,
+    getLearningStats,
+    getTopKnowledge,
+    extractTopic,
+    PendingFeedback
+} from './learning-engine';
 
 // --- AUTO-LOAD TOKEN FROM .env.bot ---
 dotenv.config({ path: path.resolve(__dirname, '..', '.env.bot') });
@@ -19,9 +30,14 @@ const bot = new TelegramBot(token, { polling: true });
 const BOT_START_TIME = Date.now();
 let totalMessages = 0;
 
+// --- PENDING FEEDBACK STORE (for 👍👎 buttons) ---
+const pendingFeedback: Record<string, PendingFeedback> = {};
+const FEEDBACK_EXPIRY = 30 * 60 * 1000; // 30 minutes
+
 console.log('🤖 PRISMA RT 04 - Real-Time Intelligent Bot (@mayoran04Bot)');
 console.log('   Mode: Real-Time Data + Ollama AI (kimi-k2.5:cloud) + Broadcast');
 console.log('   Security: Token loaded from environment');
+console.log('   🧠 Learning Engine: Active (RLHF-lite + Context Learning)');
 
 // --- OLLAMA AI INTEGRATION ---
 const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://localhost:11434/api/chat';
@@ -121,7 +137,7 @@ console.log(`   Data Store: ${initialData.announcements.length} announcements, $
 // --- WEBSITE MONITORING ---
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 const WEBSITE_URL = process.env.NEXT_PUBLIC_AI_BACKEND_URL || "http://localhost:3000";
-const MONITOR_INTERVAL = 5 * 60 * 1000;
+const MONITOR_INTERVAL = 3 * 60 * 1000;
 
 setInterval(async () => {
     try {
@@ -272,8 +288,11 @@ bot.onText(/\/help/, (msg) => {
         `/finance - Lihat ringkasan keuangan\n` +
         `/contact - Kontak pengurus RT\n` +
         `/subscribe - Berlangganan notifikasi pengumuman\n` +
-        `/status - Status sistem bot\n\n` +
-        `💡 <b>Fitur AI:</b> Ketik pertanyaan apa saja dan saya akan menjawab!`,
+        `/status - Status sistem bot\n` +
+        `/learn - Statistik pembelajaran AI\n` +
+        `/knowledge - Lihat pengetahuan yang dipelajari\n\n` +
+        `💡 <b>Fitur AI:</b> Ketik pertanyaan apa saja dan saya akan menjawab!\n` +
+        `🧠 <b>Learning:</b> Setelah AI menjawab, klik 👍/👎 untuk bantu bot belajar!`,
         { parse_mode: 'HTML' }
     );
 });
@@ -342,6 +361,51 @@ bot.onText(/\/subscribe/, (msg) => {
         saveData(data);
         bot.sendMessage(chatId, '🔔 Anda telah <b>berlangganan</b> notifikasi pengumuman!\n\nAnda akan menerima pesan otomatis saat ada pengumuman baru.\nKetik /subscribe lagi untuk berhenti berlangganan.', { parse_mode: 'HTML' });
     }
+});
+
+// --- /learn (Learning Stats) ---
+bot.onText(/\/learn/, (msg) => {
+    totalMessages++;
+    const stats = getLearningStats();
+    const topicsText = stats.topTopics.length > 0
+        ? stats.topTopics.map(t => `  • ${t.topic}: ${t.count} entries`).join('\n')
+        : '  Belum ada data';
+
+    bot.sendMessage(msg.chat.id,
+        `🧠 <b>STATISTIK PEMBELAJARAN AI</b>\n\n` +
+        `📚 <b>Knowledge Base:</b> ${stats.totalKnowledge} entries\n` +
+        `💬 <b>Total Feedback:</b> ${stats.totalFeedback}\n` +
+        `👍 <b>Positive Rate:</b> ${stats.positiveRate}%\n` +
+        `⭐ <b>Avg Reward:</b> ${stats.avgReward}\n\n` +
+        `📊 <b>Top Topik:</b>\n${topicsText}\n\n` +
+        `<i>Bot belajar dari feedback 👍👎 warga setiap kali menjawab pertanyaan AI.</i>`,
+        { parse_mode: 'HTML' }
+    );
+});
+
+// --- /knowledge (Top Knowledge Entries) ---
+bot.onText(/\/knowledge/, (msg) => {
+    totalMessages++;
+    const topEntries = getTopKnowledge(5);
+
+    if (topEntries.length === 0) {
+        bot.sendMessage(msg.chat.id,
+            '📚 <b>Knowledge Base Kosong</b>\n\nBot belum belajar apa-apa. Mulai bertanya dan berikan feedback 👍👎!',
+            { parse_mode: 'HTML' }
+        );
+        return;
+    }
+
+    const entriesText = topEntries.map((e, i) =>
+        `${i + 1}. <b>[${e.topic}]</b> ⭐${e.reward}\n` +
+        `   Q: <i>${e.question.slice(0, 60)}${e.question.length > 60 ? '...' : ''}</i>\n` +
+        `   A: ${e.answer.slice(0, 80)}${e.answer.length > 80 ? '...' : ''}`
+    ).join('\n\n');
+
+    bot.sendMessage(msg.chat.id,
+        `📚 <b>TOP PENGETAHUAN YANG DIPELAJARI</b>\n\n${entriesText}`,
+        { parse_mode: 'HTML' }
+    );
 });
 
 // --- /status ---
@@ -466,17 +530,30 @@ bot.on('message', (msg) => {
     }
 });
 
-// --- AI CHAT WITH FULL CONTEXT (OLLAMA) ---
+// --- AI CHAT WITH FULL CONTEXT (OLLAMA) + LEARNING ---
 async function handleAIChat(chatId: number, text: string, username: string) {
     if (!aiEnabled) {
         bot.sendMessage(chatId, "Maaf, fitur AI sedang tidak aktif. Silakan pilih menu di bawah ini:", mainMenu);
         return;
     }
 
-    bot.sendChatAction(chatId, 'typing');
+    // --- INSTANT FEEDBACK: Send "thinking" placeholder immediately ---
+    const thinkingMsg = await bot.sendMessage(chatId,
+        '🧠 <i>Siaga sedang berpikir...</i>',
+        { parse_mode: 'HTML' }
+    );
 
     // Load real-time data for context
     const data = loadData();
+
+    // --- LEARNING: Find relevant knowledge for few-shot examples ---
+    const relevantKnowledge = findRelevantKnowledge(text, 3);
+    const fewShotPrompt = buildFewShotPrompt(relevantKnowledge);
+    const topic = extractTopic(text);
+
+    if (relevantKnowledge.length > 0) {
+        console.log(`[Learning] Found ${relevantKnowledge.length} relevant knowledge for topic "${topic}"`);
+    }
 
     const systemPrompt = `Anda adalah "Siaga", asisten virtual cerdas untuk RT 04 RW 09 Kelurahan Kemayoran, Jakarta Pusat. Bot Telegram: @mayoran04Bot.
 
@@ -502,19 +579,19 @@ KEUANGAN:
 LOKASI SEKRETARIAT: Gg. Bugis No.95, RT 04/RW 09 Kemayoran
 
 ATURAN:
-1. Jawab dengan ramah, ringkas, dan profesional dalam bahasa Indonesia
+1. Jawab SINGKAT dan PADAT (maks 3-4 paragraf pendek) dalam bahasa Indonesia
 2. Gunakan data real-time di atas untuk menjawab pertanyaan spesifik
 3. Jika ditanya tentang hal di luar konteks RT, tetap jawab dengan baik sebagai asisten umum
 4. Jangan mengarang data yang tidak ada di konteks
 5. Jika relevan, arahkan ke fitur bot (contoh: ketik /register untuk mendaftar)
-6. Nama warga yang bertanya: ${username}`;
+6. Nama warga yang bertanya: ${username}${fewShotPrompt}`;
 
     const COMPACT_SYSTEM_PROMPT = `Anda adalah "Siaga", asisten RT 04 Kemayoran.
 DATA RT 04:
 - Pengumuman: ${data.announcements.length}
 - Saldo: ${data.finance.balance}
 - Sekretariat: Gg. Bugis No.95
-ATURAN: Ramah, gunakan DATA, jangan mengarang.`;
+ATURAN: Jawab SINGKAT, ramah, gunakan DATA, jangan mengarang.${fewShotPrompt}`;
 
     // Add user message to history
     addToHistory(chatId, 'user', text);
@@ -531,7 +608,7 @@ ATURAN: Ramah, gunakan DATA, jangan mengarang.`;
             bot.sendChatAction(chatId, 'typing').catch(() => { });
         }, 4000);
 
-        let response = await fetch(OLLAMA_API_URL, {
+        const response = await fetch(OLLAMA_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -584,14 +661,61 @@ ATURAN: Ramah, gunakan DATA, jangan mengarang.`;
 
         addToHistory(chatId, 'assistant', responseText);
 
-        // Send with Markdown, fallback to plain text if it fails
-        bot.sendMessage(chatId, responseText, { parse_mode: 'Markdown' })
-            .catch(() => {
-                bot.sendMessage(chatId, responseText);
+        // --- LEARNING: Generate feedback ID and store pending feedback ---
+        const feedbackId = `fb_${chatId}_${Date.now()}`;
+        pendingFeedback[feedbackId] = {
+            question: text,
+            answer: responseText,
+            chatId,
+            username,
+            timestamp: Date.now()
+        };
+
+        // Clean up old pending feedback (older than 30 min)
+        const now = Date.now();
+        for (const key of Object.keys(pendingFeedback)) {
+            if (now - pendingFeedback[key].timestamp > FEEDBACK_EXPIRY) {
+                delete pendingFeedback[key];
+            }
+        }
+
+        // --- EDIT the "thinking" message with real response + feedback buttons ---
+        const feedbackKeyboard = {
+            inline_keyboard: [
+                [
+                    { text: '👍 Jawaban Bagus', callback_data: `learn_good_${feedbackId}` },
+                    { text: '👎 Kurang Tepat', callback_data: `learn_bad_${feedbackId}` }
+                ]
+            ]
+        };
+
+        // Try editing with Markdown first, then HTML, then plain
+        bot.editMessageText(responseText, {
+            chat_id: chatId,
+            message_id: thinkingMsg.message_id,
+            parse_mode: 'Markdown',
+            reply_markup: feedbackKeyboard
+        }).catch(() => {
+            bot.editMessageText(responseText, {
+                chat_id: chatId,
+                message_id: thinkingMsg.message_id,
+                parse_mode: 'HTML',
+                reply_markup: feedbackKeyboard
+            }).catch(() => {
+                bot.editMessageText(responseText, {
+                    chat_id: chatId,
+                    message_id: thinkingMsg.message_id,
+                    reply_markup: feedbackKeyboard
+                }).catch(() => { });
             });
+        });
     } catch (error) {
         console.error("Ollama AI Error:", error);
-        bot.sendMessage(chatId, "Maaf, terjadi kendala pada AI. Silakan coba lagi atau gunakan menu yang tersedia.", mainMenu);
+        // Edit thinking message with error
+        bot.editMessageText(
+            "⚠️ Maaf, terjadi kendala pada AI. Silakan coba lagi atau gunakan menu yang tersedia.",
+            { chat_id: chatId, message_id: thinkingMsg.message_id }
+        ).catch(() => { });
     }
 }
 
@@ -688,6 +812,43 @@ bot.on('callback_query', (query) => {
     else if (callbackData === 'fin_pay') {
         const methods = data.finance.payment_methods.map((m, i) => `${i + 1}. ${m}`).join('\n');
         bot.sendMessage(chatId, `💳 <b>CARA BAYAR IURAN</b>\n\n${methods}\n\n<i>Mohon konfirmasi setelah transfer.</i>`, { parse_mode: 'HTML' });
+    }
+
+    // --- LEARNING: Feedback handlers ---
+    if (callbackData.startsWith('learn_good_') || callbackData.startsWith('learn_bad_')) {
+        const isGood = callbackData.startsWith('learn_good_');
+        const feedbackId = callbackData.replace(/^learn_(good|bad)_/, '');
+        const pending = pendingFeedback[feedbackId];
+
+        if (!pending) {
+            bot.answerCallbackQuery(query.id, { text: '⏰ Feedback sudah kadaluarsa.' });
+            return;
+        }
+
+        if (isGood) {
+            // Save to knowledge base with positive reward
+            addKnowledge(pending.question, pending.answer, pending.chatId, pending.username);
+            logFeedback(pending.chatId, pending.question, pending.answer, 'positive');
+            bot.answerCallbackQuery(query.id, { text: '👍 Terima kasih! Bot belajar dari jawaban ini.' });
+            console.log(`[Learning] ✅ Positive feedback: "${pending.question.slice(0, 50)}..."`);
+        } else {
+            // Penalize and log negative
+            penalizeKnowledge(pending.question);
+            logFeedback(pending.chatId, pending.question, pending.answer, 'negative');
+            bot.answerCallbackQuery(query.id, { text: '👎 Terima kasih! Bot akan berusaha lebih baik.' });
+            console.log(`[Learning] ❌ Negative feedback: "${pending.question.slice(0, 50)}..."`);
+        }
+
+        // Remove feedback buttons after response
+        if (query.message) {
+            bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+                chat_id: chatId,
+                message_id: query.message.message_id
+            }).catch(() => { });
+        }
+
+        delete pendingFeedback[feedbackId];
+        return;
     }
 
     bot.answerCallbackQuery(query.id);

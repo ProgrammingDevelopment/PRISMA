@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,48 +11,23 @@ import {
     Shield,
     Folder,
     Search,
-    Filter,
     AlertTriangle,
     CheckCircle,
     ChevronRight
 } from "lucide-react"
 import { SuratAssistant } from "@/components/surat/surat-assistant"
-
-interface LetterTemplate {
-    id: string;
-    title: string;
-    description: string;
-    category: string;
-    files: {
-        docx: string;
-        pdf: string;
-    };
-    requiredFields: string[];
-}
+import { useSuratViewModel } from "@/viewmodels/useSuratViewModel"
 
 export default function SuratPage() {
-    const [templates, setTemplates] = useState<LetterTemplate[]>([]);
-    const [loading, setLoading] = useState(true);
+    // ViewModel — single source of truth for surat data
+    const {
+        filteredTemplates: vmFilteredTemplates,
+        isLoading: loading,
+        getDownloadUrl,
+    } = useSuratViewModel();
+
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
-
-    useEffect(() => {
-        async function fetchTemplates() {
-            try {
-                // Modified for static export - fetching JSON directly
-                const response = await fetch('/api/database/surat.json');
-                const data = await response.json();
-                if (data.success) {
-                    setTemplates(data.data);
-                }
-            } catch (error) {
-                console.error('Failed to fetch templates:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchTemplates();
-    }, []);
 
     const categories = [
         { id: 'all', label: 'Semua', icon: Folder },
@@ -60,22 +35,17 @@ export default function SuratPage() {
         { id: 'keamanan', label: 'Keamanan', icon: Shield },
     ];
 
-    const filteredTemplates = templates.filter(t => {
+    // Local search filter on top of ViewModel data
+    const filteredTemplates = vmFilteredTemplates.filter(t => {
         const matchesCategory = activeCategory === 'all' || t.category === activeCategory;
-        const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        const matchesSearch = !searchQuery.trim() ||
+            t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             t.description.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && matchesSearch;
     });
 
     const handleDownload = (templateId: string, format: 'docx' | 'pdf') => {
-        // In production, these would be actual file downloads
-        // For now, show alert that the file path is ready for templates
-        const downloadPath = `/templates/surat/${templateId}.${format}`;
-
-        // Check if file exists, otherwise show placeholder message
-        const link = document.createElement('a');
-        link.href = downloadPath;
-        link.download = `${templateId}.${format}`;
+        const downloadPath = getDownloadUrl(templateId, format);
 
         // Show notification that file is being downloaded from templates folder
         alert(`Template akan diunduh dari: ${downloadPath}\n\nSilakan tambahkan file template ke folder public/templates/surat/`);
@@ -176,12 +146,8 @@ export default function SuratPage() {
                         <Card key={template.id} className="bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 transition-colors">
                             <CardHeader>
                                 <div className="flex items-start gap-3">
-                                    <div className={`p-3 rounded-lg ${template.category === 'keamanan' ? 'bg-red-500/20' : 'bg-purple-500/20'}`}>
-                                        {template.category === 'keamanan' ? (
-                                            <Shield className={`h-6 w-6 ${template.category === 'keamanan' ? 'text-red-400' : 'text-purple-400'}`} />
-                                        ) : (
-                                            <FileText className="h-6 w-6 text-purple-400" />
-                                        )}
+                                    <div className="p-3 rounded-lg bg-purple-500/20">
+                                        <FileText className="h-6 w-6 text-purple-400" />
                                     </div>
                                     <div className="flex-1">
                                         <CardTitle className="text-white text-base">{template.title}</CardTitle>

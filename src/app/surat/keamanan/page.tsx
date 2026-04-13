@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect, FormEvent } from "react"
+import { useState, FormEvent } from "react"
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
     ArrowLeft,
-    Shield,
     AlertTriangle,
     Phone,
     User,
@@ -21,17 +20,16 @@ import {
     EyeOff,
     Info
 } from "lucide-react"
-
-interface IncidentType {
-    id: string;
-    label: string;
-    priority: string;
-}
+import { useKeamananViewModel } from "@/viewmodels/useKeamananViewModel"
 
 export default function LaporanKeamananPage() {
-    const [incidentTypes, setIncidentTypes] = useState<IncidentType[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
+    // ViewModel — single source of truth for keamanan data
+    const {
+        incidentTypes,
+        isLoading: loading,
+        isSubmitting: submitting,
+    } = useKeamananViewModel();
+
     const [submitted, setSubmitted] = useState(false);
     const [reportId, setReportId] = useState<string | null>(null);
     const [showPhone, setShowPhone] = useState(false);
@@ -48,30 +46,6 @@ export default function LaporanKeamananPage() {
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
-
-    useEffect(() => {
-        async function fetchIncidentTypes() {
-            try {
-                const response = await fetch('/api/database/keamanan.json');
-                const data = await response.json();
-                if (data.success) {
-                    setIncidentTypes(data.types.map((t: { id: string; label: string }) => ({ ...t, priority: 'medium' })));
-                }
-            } catch (error) {
-                console.error('Failed to fetch incident types:', error);
-                // Use default types if fetch fails
-                setIncidentTypes([
-                    { id: 'pencurian', label: 'Pencurian', priority: 'high' },
-                    { id: 'vandalisme', label: 'Vandalisme', priority: 'medium' },
-                    { id: 'gangguan', label: 'Gangguan Ketertiban', priority: 'low' },
-                    { id: 'lainnya', label: 'Lainnya', priority: 'low' },
-                ]);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchIncidentTypes();
-    }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -125,6 +99,9 @@ export default function LaporanKeamananPage() {
         return Object.keys(newErrors).length === 0;
     };
 
+    // Get handleSubmitReport from ViewModel
+    const vmRef = useKeamananViewModel();
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
 
@@ -132,22 +109,26 @@ export default function LaporanKeamananPage() {
             return;
         }
 
-        setSubmitting(true);
-
         try {
-            // Mock submission for static export
-            // In production, this would send to a real API
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Submit through ViewModel → Repository → SqliteDB pipeline
+            const result = await vmRef.handleSubmitReport({
+                kronologi: formData.kronologi,
+                tanggalKejadian: formData.tanggal_kejadian,
+                waktuKejadian: formData.waktu_kejadian,
+                lokasi: formData.lokasi,
+                namaPelapor: formData.nama_pelapor,
+                teleponPelapor: formData.telepon_pelapor,
+                jenisKejadian: formData.jenis_kejadian,
+            });
 
-            // Generate mock report ID
-            const mockReportId = 'RPT-' + Date.now().toString(36).toUpperCase();
-
-            setSubmitted(true);
-            setReportId(mockReportId);
-        } catch (error) {
+            if (result.success) {
+                setSubmitted(true);
+                setReportId(result.reportId ?? 'RPT-' + Date.now().toString(36).toUpperCase());
+            } else {
+                setErrors({ submit: result.errors?.[0] ?? 'Terjadi kesalahan. Silakan coba lagi.' });
+            }
+        } catch {
             setErrors({ submit: 'Terjadi kesalahan. Silakan coba lagi.' });
-        } finally {
-            setSubmitting(false);
         }
     };
 

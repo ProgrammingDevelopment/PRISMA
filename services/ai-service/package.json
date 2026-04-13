@@ -1,0 +1,14 @@
+{
+  "name": "prisma-ai-service",
+  "version": "1.0.0",
+  "description": "PRISMA AI Service — Chat and NLP features via Ollama LLM",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5"
+  }
+}

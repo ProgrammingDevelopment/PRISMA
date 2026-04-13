@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +8,6 @@ import {
     ArrowRight,
     TrendingUp,
     TrendingDown,
-    DollarSign,
     Folder,
     FileText,
     Shield,
@@ -19,13 +17,7 @@ import {
     Calendar,
     Lock
 } from "lucide-react"
-
-interface ExpenseCategory {
-    kategori: string;
-    persentase: number;
-    avgBulanan: number;
-    keterangan: string;
-}
+import { useKeuanganViewModel } from "@/viewmodels/useKeuanganViewModel"
 
 function formatCurrency(amount: number): string {
     return new Intl.NumberFormat('id-ID', {
@@ -36,9 +28,11 @@ function formatCurrency(amount: number): string {
 }
 
 export function AdministrationHub() {
-    const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
-    const [avgExpense, setAvgExpense] = useState(2500000);
-    const [loading, setLoading] = useState(true);
+    // ViewModel — single source of truth for keuangan data
+    const { expenseSummary, isLoading: loading } = useKeuanganViewModel();
+
+    const expenseCategories = expenseSummary.categories;
+    const avgExpense = expenseSummary.avgMonthlyExpense;
 
     const letters = [
         { title: "Surat Keterangan Kematian", id: "kematian" },
@@ -46,25 +40,6 @@ export function AdministrationHub() {
         { title: "Surat Pengantar Pindah Domisili", id: "pindah" },
         { title: "Surat Keterangan RT (Umum/Kelakuan Baik)", id: "umum" },
     ]
-
-    useEffect(() => {
-        async function fetchExpenseSummary() {
-            try {
-                // Modified for static export - fetching JSON directly
-                const response = await fetch('/api/database/keuangan-summary.json');
-                const data = await response.json();
-                if (data.success) {
-                    setExpenseCategories(data.data.categories);
-                    setAvgExpense(data.data.avgMonthlyExpense);
-                }
-            } catch (error) {
-                console.error('Failed to fetch expense summary:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchExpenseSummary();
-    }, []);
 
     const handleDownloadTemplate = (id: string, format: 'docx' | 'pdf') => {
         // Direct to templates folder

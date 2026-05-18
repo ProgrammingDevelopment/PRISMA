@@ -55,9 +55,18 @@ const SURAT_RESPONSES: Record<string, string> = {
     'keamanan': 'Untuk Laporan Keamanan, Anda perlu mengisi: kronologi kejadian, tanggal kejadian, nama pelapor, dan nomor telepon.',
 };
 
-// API Client — Real Ollama + Mock Fallback
+// API Client — Real Groq + Mock Fallback
 class AIServiceClient {
-    private chatApiUrl = '/api/chat';
+    private get chatApiUrl(): string {
+        if (typeof window !== 'undefined') {
+            if (process.env.NEXT_PUBLIC_CHAT_API_URL) {
+                return process.env.NEXT_PUBLIC_CHAT_API_URL;
+            }
+            const gatewayUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL ?? 'http://localhost:4000/api/v1';
+            return `${gatewayUrl}/ai/chat`;
+        }
+        return '/api/chat';
+    }
 
     /**
      * Chat with PRISMA virtual assistant (Ollama AI)

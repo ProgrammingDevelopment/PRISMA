@@ -64,7 +64,7 @@ export default function SuratPage() {
             <div className="container mx-auto px-4 max-w-6xl">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">
-                    <Button variant="outline" asChild className="border-white/20 text-white hover:bg-white/10">
+                    <Button variant="ghost" asChild className="border border-white/20 text-white hover:bg-white/10 bg-transparent">
                         <Link href="/#admin">
                             <ArrowLeft className="h-4 w-4 mr-2" />
                             Kembali
@@ -125,11 +125,11 @@ export default function SuratPage() {
                             return (
                                 <Button
                                     key={cat.id}
-                                    variant={activeCategory === cat.id ? "default" : "outline"}
+                                    variant={activeCategory === cat.id ? "default" : "ghost"}
                                     onClick={() => setActiveCategory(cat.id)}
                                     className={activeCategory === cat.id
-                                        ? "bg-purple-600 hover:bg-purple-700"
-                                        : "border-white/20 text-white hover:bg-white/10"
+                                        ? "bg-purple-600 hover:bg-purple-700 text-white"
+                                        : "border border-white/20 text-white hover:bg-white/10 bg-transparent"
                                     }
                                 >
                                     <Icon className="h-4 w-4 mr-2" />
@@ -173,8 +173,8 @@ export default function SuratPage() {
                                 </Button>
                                 <Button
                                     size="sm"
-                                    variant="outline"
-                                    className="flex-1 border-white/20 text-white hover:bg-white/10"
+                                    variant="ghost"
+                                    className="flex-1 border border-white/20 text-white hover:bg-white/10 bg-transparent"
                                     onClick={() => handleDownload(template.id, 'pdf')}
                                 >
                                     <FileDown className="h-4 w-4 mr-1" />

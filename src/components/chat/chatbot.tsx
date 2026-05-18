@@ -55,8 +55,11 @@ export function Chatbot() {
         setIsTyping(true)
 
         try {
-            // 2. Call Python API (Proxied/Rewritten)
-            const chatApiUrl = process.env.NEXT_PUBLIC_CHAT_API_URL || "/api/chat";
+            // 2. Call API (Proxied/Rewritten or direct Gateway)
+            const chatApiUrl = process.env.NEXT_PUBLIC_CHAT_API_URL || 
+                (typeof window !== "undefined"
+                    ? `${process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:4000/api/v1"}/ai/chat`
+                    : "/api/chat");
             const res = await fetch(chatApiUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

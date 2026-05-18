@@ -104,7 +104,11 @@ export default function TelegramWebApp() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const chatApiUrl = process.env.NEXT_PUBLIC_CHAT_API_URL || 
+        (typeof window !== "undefined"
+          ? `${process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://localhost:4000/api/v1"}/ai/chat`
+          : "/api/chat");
+      const response = await fetch(chatApiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

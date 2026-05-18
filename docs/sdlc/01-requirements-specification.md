@@ -65,10 +65,10 @@ graph LR
 
 | Aktor | Deskripsi | Hak Akses |
 |-------|-----------|-----------|
-| **Public** | Pengunjung tanpa login | Lihat landing page, info umum, galeri |
-| **Warga** | Warga terdaftar RT 04 | Semua fitur warga: keuangan, surat, laporan |
+| **Public** | Pengunjung tanpa login | Fitur terbatas: Lihat landing page, info umum, galeri, portal CCTV terbatas |
+| **Warga RT 04** | Warga terdaftar spesifik RT 04 | Akses penuh warga: keuangan, surat, laporan, live CCTV RT 04 |
 | **Staff** | Sekretaris / Bendahara RT | Input data, verifikasi surat, manage keuangan |
-| **Admin** | Ketua RT | Full access + audit log + broadcast |
+| **Admin** | Ketua RT | Full access + audit log + broadcast + manage CCTV |
 | **Bot** | Sistem Telegram otomatis | Baca data, generate PDF, broadcast |
 
 ---
@@ -106,6 +106,8 @@ graph LR
 | FR-03.3 | Menampilkan daftar laporan keamanan terbaru | Must |
 | FR-03.4 | Klasifikasi prioritas otomatis (Low/Medium/High) | Should |
 | FR-03.5 | Notifikasi admin via Telegram saat laporan masuk | Should |
+| FR-03.6 | Integrasi API CCTV RT wilayah setempat untuk keamanan | Must |
+| FR-03.7 | Warga RT 04 dapat melihat streaming CCTV lingkungan secara real-time | Must |
 
 ### FR-04: Modul Surat Menyurat
 
@@ -170,7 +172,7 @@ graph LR
 | NFR-03.3 | Horizontal scaling via microservices | Docker Compose |
 | NFR-03.4 | Independent service deployment | Per-service |
 
-### NFR-04: Kompatibilitas
+### NFR-04: Kompatibilitas & Media
 
 | ID | Requirement | Detail |
 |----|-------------|--------|
@@ -178,6 +180,7 @@ graph LR
 | NFR-04.2 | Mobile responsive | iOS Safari, Android Chrome |
 | NFR-04.3 | PWA installable | Service Worker + manifest |
 | NFR-04.4 | Dark/Light mode | System preference auto-detect |
+| NFR-04.5 | Image Optimization | Payload gambar tidak boleh buram/pecah, harus responsif menyesuaikan layar (desktop/laptop/devices), kompresi otomatis |
 
 ---
 

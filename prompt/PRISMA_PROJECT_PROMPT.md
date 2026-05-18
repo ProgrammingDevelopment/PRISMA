@@ -311,10 +311,12 @@ prisma/
 | 17 | `/surat` | Template surat RT | Warga |
 | 18 | `/surat/keamanan` | Form lapor keamanan | Warga |
 | 19 | `/galeri` | Galeri foto RT | Public |
-| 20 | `/profile` | Profil pengguna | Warga |
-| 21 | `/search` | Pencarian global | Warga |
-| 22 | `/settings/database` | Pengaturan database | Admin |
-| 23 | `/telegram-webapp` | Telegram WebApp view | Public |
+| 20 | `/cctv` | Live Streaming CCTV | Warga RT 04 / Admin |
+| 21 | `/cctv/public` | Portal CCTV terbatas | Public |
+| 22 | `/profile` | Profil pengguna | Warga |
+| 23 | `/search` | Pencarian global | Warga |
+| 24 | `/settings/database` | Pengaturan database | Admin |
+| 25 | `/telegram-webapp` | Telegram WebApp view | Public |
 
 ### 3.5 Komponen Reusable
 
@@ -337,7 +339,12 @@ prisma/
 // next.config.ts — Key Settings
 {
   output: 'export',          // Static HTML Export (SSG)
-  images: { unoptimized: true },
+  images: { 
+    unoptimized: false,      // Changed: Enable built-in optimization if supported or use custom loader
+    formats: ['image/avif', 'image/webp'], 
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384]
+  },
   trailingSlash: true,       // URL compatibility
   compress: true,            // Gzip compression
   poweredByHeader: false,    // Remove X-Powered-By (security)
@@ -645,6 +652,15 @@ erDiagram
         text created_at "DEFAULT datetime(now)"
     }
 
+    CCTV_CAMERAS {
+        int id PK "AUTO_INCREMENT"
+        text nama "NOT NULL"
+        text lokasi "NOT NULL"
+        text stream_url "NOT NULL"
+        text status "Active | Inactive"
+        int is_public "0 | 1"
+    }
+
     WARGA ||--o{ SECURITY_REPORTS : "reports"
     WARGA ||--o{ LETTERS : "requests"
     WARGA ||--o{ FINANCE_TRANSACTIONS : "pays"
@@ -744,6 +760,22 @@ CREATE TABLE IF NOT EXISTS letters (
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_letters_status ON letters(status);
+```
+
+#### Table: `cctv_cameras`
+```sql
+CREATE TABLE IF NOT EXISTS cctv_cameras (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    nama         TEXT NOT NULL,
+    lokasi       TEXT NOT NULL,
+    stream_url   TEXT NOT NULL,
+    status       TEXT DEFAULT 'Active',   -- 'Active' | 'Inactive'
+    is_public    INTEGER DEFAULT 0        -- 0 = Warga RT04 only, 1 = Public
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_cctv_status ON cctv_cameras(status);
+CREATE INDEX IF NOT EXISTS idx_cctv_public ON cctv_cameras(is_public);
 ```
 
 ### 8.4 Database Index Map
@@ -851,6 +883,7 @@ interface SecureCredentials {
 | `getSecurityStats()` | `{total, pending, resolved}` | SQLite |
 | `getRecentSecurityReports()` | `SecurityReport[]` | SQLite |
 | `submitSecurityReport(report)` | `{success, reportId}` | SQLite |
+| `getCCTVStreams(isPublic)` | `CCTVStream[]` | SQLite |
 
 ### 9.2 AI Backend API (FastAPI Port 8000)
 

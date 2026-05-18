@@ -19,7 +19,9 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384]
   },
   // Fix Turbopack compat error with next-pwa/serwist webpack config
-  turbopack: {},
+  turbopack: {
+    root: process.cwd(),
+  },
   // Trailing slash for hosting compatibility
   trailingSlash: true,
   // Performance: compress responses

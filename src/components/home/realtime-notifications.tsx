@@ -30,7 +30,7 @@ export function RealtimeNotifications() {
           schema: 'public',
           table: 'laporan_keamanan'
         },
-        (payload) => {
+        (payload: { new: { id: string; jenis_laporan?: string } }) => {
           const newReport = payload.new
           
           const newNotification: Notification = {

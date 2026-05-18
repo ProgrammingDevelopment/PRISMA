@@ -107,7 +107,7 @@ export default function LayananPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-gradient-to-br dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 py-8 transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 dark:bg-gradient-to-br dark:from-background dark:via-[#130608] dark:to-background py-8 transition-colors duration-300">
             <div className="container mx-auto px-4 max-w-6xl">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-8">

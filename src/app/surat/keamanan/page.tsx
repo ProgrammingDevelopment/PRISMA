@@ -144,7 +144,7 @@ export default function LaporanKeamananPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50 dark:from-slate-900 dark:via-red-900/20 dark:to-slate-900">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50 dark:from-background dark:via-red-950/20 dark:to-background">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
             </div>
         );
@@ -152,7 +152,7 @@ export default function LaporanKeamananPage() {
 
     if (submitted) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 dark:from-slate-900 dark:via-green-950/30 dark:to-slate-900 py-8 transition-colors duration-300 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 dark:from-background dark:via-green-950/20 dark:to-background py-8 transition-colors duration-300 flex items-center justify-center">
                 <div className="container mx-auto px-4 max-w-2xl">
                     <Card className="bg-white dark:bg-slate-900/60 border-green-200 dark:border-green-500/30 shadow-xl backdrop-blur-md">
                         <CardContent className="p-8 text-center">
@@ -202,7 +202,7 @@ export default function LaporanKeamananPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 dark:from-slate-900 dark:via-red-900/20 dark:to-slate-900 py-8 transition-colors duration-300">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 dark:from-background dark:via-red-950/20 dark:to-background py-8 transition-colors duration-300">
             <div className="container mx-auto px-4 max-w-4xl">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center gap-4 mb-8">

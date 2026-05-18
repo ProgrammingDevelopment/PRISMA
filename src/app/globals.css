@@ -38,31 +38,30 @@
    Optimized for eye comfort and readability
 */
 .dark {
-  --background: #020617;
-  --foreground: #f1f5f9;
+  --background: #0c0406; /* Hitam Kemerahan Muda / Premium soft reddish-black */
+  --foreground: #fcf8f8; /* Soft pinkish-white for optimal contrast */
 
-  --primary: #3b82f6;
+  --primary: #f43f5e; /* Rose-500: beautiful premium soft red highlight */
   --primary-foreground: #ffffff;
 
-  --secondary: #1e293b;
-  --secondary-foreground: #f1f5f9;
+  --secondary: #1e0b0e; /* Deep burgundy-black */
+  --secondary-foreground: #fcd5d9;
 
-  --muted: #0f172a;
-  --muted-foreground: #94a3b8;
+  --muted: #18080a; /* Muted reddish-black */
+  --muted-foreground: #b48d94; /* Warm rose-gray text */
 
-  --accent: #1e293b;
-  --accent-foreground: #38bdf8;
+  --accent: #2c0f14; /* Highlight accent block */
+  --accent-foreground: #fda4af; /* Rose-300 */
 
-  --card: #0b1121;
-  --card-foreground: #e2e8f0;
+  --card: #120608; /* Premium reddish-black card */
+  --card-foreground: #f1e5e6;
 
-  --border: #334155;
-  /* Slightly lighter for visibility */
-  --input: #1e293b;
-  --ring: #3b82f6;
+  --border: #2e1318; /* Subtle reddish-black border */
+  --input: #1a0a0d;
+  --ring: #f43f5e;
 
   /* Custom gradient text colors for dark mode */
-  --gradient-text: #f1f5f9;
+  --gradient-text: #fcf8f8;
   --gradient-text-muted: #cbd5e1;
 }
 

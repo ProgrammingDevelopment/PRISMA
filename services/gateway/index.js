@@ -62,12 +62,21 @@ app.get('/health', (req, res) => {
 });
 
 // ── Service Routes (Proxy) ────────────────────────────
+const getVercelUrl = () => {
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return '';
+};
+
+const vercelBase = getVercelUrl();
+
 const services = {
-  '/api/v1/warga': process.env.WARGA_SERVICE_URL || 'http://localhost:4001',
-  '/api/v1/keuangan': process.env.KEUANGAN_SERVICE_URL || 'http://localhost:4002',
-  '/api/v1/keamanan': process.env.KEAMANAN_SERVICE_URL || 'http://localhost:4003',
-  '/api/v1/surat': process.env.SURAT_SERVICE_URL || 'http://localhost:4004',
-  '/api/v1/ai': process.env.AI_SERVICE_URL || 'http://localhost:4005',
+  '/api/v1/warga': process.env.WARGA_SERVICE_URL || (vercelBase ? `${vercelBase}/_/warga-service` : 'http://localhost:4001'),
+  '/api/v1/keuangan': process.env.KEUANGAN_SERVICE_URL || (vercelBase ? `${vercelBase}/_/keuangan-service` : 'http://localhost:4002'),
+  '/api/v1/keamanan': process.env.KEAMANAN_SERVICE_URL || (vercelBase ? `${vercelBase}/_/keamanan-service` : 'http://localhost:4003'),
+  '/api/v1/surat': process.env.SURAT_SERVICE_URL || (vercelBase ? `${vercelBase}/_/surat-service` : 'http://localhost:4004'),
+  '/api/v1/ai': process.env.AI_SERVICE_URL || (vercelBase ? `${vercelBase}/_/ai-service` : 'http://localhost:4005'),
 };
 
 Object.entries(services).forEach(([path, target]) => {

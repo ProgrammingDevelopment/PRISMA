@@ -66,6 +66,11 @@ class ServiceRegistryClass {
    * Get API Gateway URL
    */
   getGatewayUrl(): string {
+    if (typeof window !== 'undefined') {
+      const isVercel = window.location.hostname.endsWith('.vercel.app') || !window.location.hostname.includes('localhost');
+      return process.env.NEXT_PUBLIC_API_GATEWAY_URL ?? 
+        (isVercel ? `${window.location.origin}/_/gateway/api/v1` : 'http://localhost:4000/api/v1');
+    }
     return process.env.NEXT_PUBLIC_API_GATEWAY_URL ?? 'http://localhost:4000/api/v1';
   }
 

@@ -121,9 +121,13 @@ export class ApiClient {
 
 // Factory function for creating service-specific clients
 export function createApiClient(servicePath: string): ApiClient {
-  const gatewayUrl = typeof window !== 'undefined'
-    ? (process.env.NEXT_PUBLIC_API_GATEWAY_URL ?? 'http://localhost:4000/api/v1')
-    : 'http://localhost:4000/api/v1';
+  let gatewayUrl = 'http://localhost:4000/api/v1';
+
+  if (typeof window !== 'undefined') {
+    const isVercel = window.location.hostname.endsWith('.vercel.app') || !window.location.hostname.includes('localhost');
+    gatewayUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL ?? 
+      (isVercel ? `${window.location.origin}/_/gateway/api/v1` : 'http://localhost:4000/api/v1');
+  }
 
   return new ApiClient({
     baseUrl: `${gatewayUrl}${servicePath}`,

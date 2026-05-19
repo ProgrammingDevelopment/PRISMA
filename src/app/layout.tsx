@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/hooks/useAuth";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
@@ -113,13 +114,15 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Navbar />
-          <main id="main-content" className="flex-1" role="main">
-            {children}
-          </main>
-          <PWAInstallPrompt />
-          <WhatsAppDirect />
-          <Footer />
+          <AuthProvider>
+            <Navbar />
+            <main id="main-content" className="flex-1" role="main">
+              {children}
+            </main>
+            <PWAInstallPrompt />
+            <WhatsAppDirect />
+            <Footer />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

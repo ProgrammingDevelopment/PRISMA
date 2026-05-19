@@ -21,7 +21,7 @@ import {
     resetPassword as authResetPassword,
     type AuthUser,
     type AuthResult,
-} from '@/lib/supabase-auth';
+} from '../lib/supabase-auth';
 
 // ============================================
 // Auth Context
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         initAuth();
 
         // Subscribe to auth state changes
-        const unsubscribe = onAuthStateChange((authUser) => {
+        const unsubscribe = onAuthStateChange((authUser: AuthUser | null) => {
             if (mounted) {
                 setUser(authUser);
                 setIsLoading(false);
@@ -212,7 +212,7 @@ function useAuthStandalone(): AuthContextType {
     useEffect(() => {
         let mounted = true;
 
-        getCurrentUser().then(u => {
+        getCurrentUser().then((u: AuthUser | null) => {
             if (mounted) {
                 setUser(u);
                 setIsLoading(false);
@@ -221,7 +221,7 @@ function useAuthStandalone(): AuthContextType {
             if (mounted) setIsLoading(false);
         });
 
-        const unsubscribe = onAuthStateChange(u => {
+        const unsubscribe = onAuthStateChange((u: AuthUser | null) => {
             if (mounted) {
                 setUser(u);
                 setIsLoading(false);

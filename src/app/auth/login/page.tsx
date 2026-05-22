@@ -207,6 +207,7 @@ export default function LoginPage() {
                                         <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                         <Input
                                             id="email"
+                                            name="email"
                                             placeholder="warga.rt04@gmail.com"
                                             type="email"
                                             className="pl-10"
@@ -222,6 +223,7 @@ export default function LoginPage() {
                                         <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                         <Input
                                             id="password"
+                                            name="password"
                                             type="password"
                                             className="pl-10"
                                             required

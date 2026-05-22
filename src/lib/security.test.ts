@@ -417,3 +417,33 @@ describe('sanitizeInput - Extended XSS Coverage', () => {
         expect(sanitizeInput(input)).not.toContain('<script')
     })
 })
+
+import { validateEmailFormat } from './security'
+
+describe('validateEmailFormat - Personal Email Validation', () => {
+    it('should allow valid personal email addresses', () => {
+        expect(validateEmailFormat('warga.rt04@gmail.com')).toBe(true)
+        expect(validateEmailFormat('dika.pratama@yahoo.co.id')).toBe(true)
+        expect(validateEmailFormat('rt04.kemayoran@outlook.com')).toBe(true)
+        expect(validateEmailFormat('user.name+label@gmail.com')).toBe(true)
+    })
+
+    it('should block invalid email formats', () => {
+        expect(validateEmailFormat('not-an-email')).toBe(false)
+        expect(validateEmailFormat('missingdomain@')).toBe(false)
+        expect(validateEmailFormat('@missingusername.com')).toBe(false)
+        expect(validateEmailFormat('spaces in@email.com')).toBe(false)
+        expect(validateEmailFormat('')).toBe(false)
+        expect(validateEmailFormat(null as unknown as string)).toBe(false)
+    })
+
+    it('should block disposable and temporary email domains', () => {
+        expect(validateEmailFormat('test@tempmail.com')).toBe(false)
+        expect(validateEmailFormat('warga@throwawaymail.com')).toBe(false)
+        expect(validateEmailFormat('admin@mailinator.com')).toBe(false)
+        expect(validateEmailFormat('user@10minutemail.com')).toBe(false)
+        expect(validateEmailFormat('warga.palsu@yopmail.com')).toBe(false)
+        expect(validateEmailFormat('badboy@temp-mail.org')).toBe(false)
+    })
+})
+

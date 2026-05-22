@@ -778,3 +778,32 @@ export function sanitizeServerInput(input: string, maxLength?: number): string {
 
     return sanitized;
 }
+
+// ============================================
+// Email Validation for Personal Domains
+// ============================================
+
+export function validateEmailFormat(email: string): boolean {
+    if (!email || typeof email !== 'string') return false;
+    
+    // Secure RFC-compliant regex for email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) return false;
+    
+    // Prevent disposable/temporary email domains to secure authentic registrations
+    const blockedDomains = [
+        'tempmail.com', 'throwawaymail.com', 'mailinator.com', 
+        '10minutemail.com', 'yopmail.com', 'temp-mail.org'
+    ];
+    
+    const parts = email.split('@');
+    if (parts.length !== 2) return false;
+    const domain = parts[1].toLowerCase();
+    
+    if (blockedDomains.some(d => domain === d || domain.endsWith('.' + d))) {
+        return false;
+    }
+    
+    return true;
+}
+

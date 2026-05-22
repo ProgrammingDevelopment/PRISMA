@@ -15,7 +15,8 @@ import {
     sanitizeInput,
     logSecurityEvent,
     storeCredentials,
-    secureStorage
+    secureStorage,
+    validateEmailFormat
 } from "@/lib/security"
 import { RateLimitWarning, SecurityBadge } from "@/components/ui/security"
 
@@ -54,9 +55,8 @@ export default function LoginPage() {
         const password = (form.elements.namedItem('password') as HTMLInputElement).value // Raw password for comparison
 
         // Validate email format before processing (PortSwigger: Server-side validation)
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(email)) {
-            setLoginError("Format email tidak valid.")
+        if (!validateEmailFormat(email)) {
+            setLoginError("Format email tidak valid atau domain diblokir.")
             setIsLoading(false)
             return
         }

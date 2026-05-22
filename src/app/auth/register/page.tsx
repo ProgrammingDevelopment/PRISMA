@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { User, Phone, MapPin, Loader2, Mail, Lock, CheckCircle, AlertCircle, Shield } from "lucide-react"
 import { signUp } from "@/lib/supabase-auth"
+import { validateEmailFormat } from "@/lib/security"
 
 export default function RegisterPage() {
     const router = useRouter()
@@ -28,6 +29,13 @@ export default function RegisterPage() {
         const phone = (form.elements.namedItem('phone') as HTMLInputElement).value
         const address = (form.elements.namedItem('address') as HTMLInputElement).value
         const password = (form.elements.namedItem('password') as HTMLInputElement).value
+
+        // Email validation
+        if (!validateEmailFormat(email)) {
+            setErrorMsg("Format email tidak valid atau domain diblokir.")
+            setIsLoading(false)
+            return
+        }
 
         // Simple validation
         if (password.length < 6) {

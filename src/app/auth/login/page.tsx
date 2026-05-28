@@ -8,20 +8,24 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Mail, Lock, Loader2, CheckCircle, AlertCircle, Shield } from "lucide-react"
-import { authenticateDemo } from "@/lib/demo-credentials"
+import { signInAdmin, signInPengurus, signInWarga } from "@/lib/supabase-auth"
 import {
     checkRateLimit,
     resetRateLimit,
     sanitizeInput,
     logSecurityEvent,
-    storeCredentials
+    storeCredentials,
+    secureStorage,
+    validateEmailFormat
 } from "@/lib/security"
 import { RateLimitWarning, SecurityBadge } from "@/components/ui/security"
 
+type Role = 'warga' | 'pengurus' | 'admin'
 
 export default function LoginPage() {
     const router = useRouter()
     const [isLoading, setIsLoading] = React.useState(false)
+    const [selectedRole, setSelectedRole] = React.useState<Role>('warga')
 
     const [loginError, setLoginError] = React.useState<string | null>(null)
     const [loginSuccess, setLoginSuccess] = React.useState(false)
@@ -47,71 +51,78 @@ export default function LoginPage() {
         setIsLoading(true)
 
         const form = event.target as HTMLFormElement
-        // SECURITY: Sanitize email but NOT password (sanitizing password strips special chars needed for strong passwords)
-        // PortSwigger: Input validation should be context-appropriate
         const email = sanitizeInput((form.elements.namedItem('email') as HTMLInputElement).value)
-        const password = (form.elements.namedItem('password') as HTMLInputElement).value // Raw password for comparison
+        const password = (form.elements.namedItem('password') as HTMLInputElement).value
 
-        // Validate email format before processing (PortSwigger: Server-side validation)
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(email)) {
-            setLoginError("Format email tidak valid.")
+        if (!validateEmailFormat(email)) {
+            setLoginError("Format email tidak valid atau domain diblokir.")
             setIsLoading(false)
             return
         }
 
-        // Simulate API call with delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Authenticate via Supabase Auth (with automatic demo fallback)
+        let result;
+        if (selectedRole === 'admin') {
+            result = await signInAdmin(email, password)
+        } else if (selectedRole === 'pengurus') {
+            result = await signInPengurus(email, password)
+        } else {
+            result = await signInWarga(email, password)
+        }
 
-        // Authenticate with demo credentials
-        const user = authenticateDemo(email, password)
-
-        if (user) {
+        if (result.success && result.user) {
+            const user = result.user
             setLoginSuccess(true)
 
-            // SECURITY: Store credentials securely (encrypted)
+            const tokenBytes = new Uint8Array(32);
+            crypto.getRandomValues(tokenBytes);
+            const sessionToken = Array.from(tokenBytes, b => b.toString(16).padStart(2, '0')).join('');
+
             storeCredentials({
                 userId: String(user.id),
-                role: user.role as 'admin' | 'staff' | 'warga',
-                sessionToken: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+                role: user.role === 'admin' ? 'admin' : (user.role === 'pengurus' ? 'staff' : 'warga'),
+                sessionToken,
+                expiresAt: Date.now() + (24 * 60 * 60 * 1000)
             })
 
-            // Legacy storage for backward compatibility (will be deprecated)
             localStorage.setItem('warga_logged_in', 'true')
-            localStorage.setItem('warga_profile', JSON.stringify({
+            secureStorage.set('warga_profile', {
                 id: user.id,
                 nama: user.nama,
                 email: user.email,
-                telepon: user.no_telepon, // Normalized key
-                no_telepon: user.no_telepon,
-                tanggal_lahir: user.tanggal_lahir,
-                alamat: user.alamat,
-                blok: user.blok,
-                no_rumah: user.no_rumah,
-                foto_path: user.foto_path,
-                status: user.status,
+                telepon: user.metadata.no_telepon || '',
+                no_telepon: user.metadata.no_telepon || '',
+                tanggal_lahir: user.metadata.tanggal_lahir || '',
+                alamat: user.metadata.alamat || '',
+                blok: user.metadata.blok || '',
+                no_rumah: user.metadata.no_rumah || '',
+                foto_path: user.avatarUrl || '',
+                status: user.metadata.status || 'Aktif',
                 role: user.role,
                 permissions: user.permissions,
                 tanggal_daftar: new Date().toISOString().split('T')[0],
-            }))
+            }, { encrypt: true, expiry: 24 * 60 * 60 * 1000 })
 
-            // SECURITY: Reset rate limit on successful login
+            document.cookie = "warga_session=true; path=/; max-age=86400; SameSite=Lax; secure";
+
             resetRateLimit('login')
             logSecurityEvent('login_success', true, `User: ${user.email}, Role: ${user.role}`)
 
             await new Promise(resolve => setTimeout(resolve, 500))
 
-            // Redirect based on role
-            if (user.role === 'admin') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect');
+
+            if (redirectUrl) {
+                router.push(redirectUrl)
+            } else if (user.role === 'admin') {
                 router.push("/admin")
             } else {
-                router.push("/profile")
+                router.push("/")
             }
         } else {
-            // SECURITY: Log failed attempt
             logSecurityEvent('login_failed', false, `Email: ${email}`)
-            setLoginError("Email atau password tidak ditemukan.")
+            setLoginError(result.error || "Email atau password tidak ditemukan.")
             setIsLoading(false)
         }
     }
@@ -154,7 +165,7 @@ export default function LoginPage() {
 
                     <blockquote className="border-l-2 border-white/30 pl-4 mt-6">
                         <p className="text-base italic opacity-90">
-                            "Platform PRISMA membawa RT 04 ke era digital dengan transparansi penuh."
+                            &ldquo;Platform PRISMA membawa RT 04 ke era digital dengan transparansi penuh.&rdquo;
                         </p>
                         <footer className="text-sm opacity-70 mt-2">— Ketua RT 04 RW 09 Kemayoran</footer>
                     </blockquote>
@@ -198,12 +209,43 @@ export default function LoginPage() {
                                 )}
 
                                 <div className="grid gap-2">
+                                    <Label>Login Sebagai</Label>
+                                    <div className="flex gap-2">
+                                        <Button 
+                                            type="button"
+                                            variant={selectedRole === 'warga' ? 'default' : 'outline'} 
+                                            onClick={() => setSelectedRole('warga')}
+                                            className="flex-1"
+                                        >
+                                            Warga
+                                        </Button>
+                                        <Button 
+                                            type="button"
+                                            variant={selectedRole === 'pengurus' ? 'default' : 'outline'} 
+                                            onClick={() => setSelectedRole('pengurus')}
+                                            className="flex-1"
+                                        >
+                                            Pengurus
+                                        </Button>
+                                        <Button 
+                                            type="button"
+                                            variant={selectedRole === 'admin' ? 'default' : 'outline'} 
+                                            onClick={() => setSelectedRole('admin')}
+                                            className="flex-1"
+                                        >
+                                            Admin
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-2">
                                     <Label htmlFor="email">Email</Label>
                                     <div className="relative">
                                         <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                         <Input
                                             id="email"
-                                            placeholder="email@contoh.com"
+                                            name="email"
+                                            placeholder="warga.rt04@gmail.com"
                                             type="email"
                                             className="pl-10"
                                             required
@@ -218,6 +260,7 @@ export default function LoginPage() {
                                         <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                         <Input
                                             id="password"
+                                            name="password"
                                             type="password"
                                             className="pl-10"
                                             required
@@ -251,7 +294,7 @@ export default function LoginPage() {
                     <div className="flex flex-col items-center pt-4 border-t border-dashed">
                         <p className="text-xs text-muted-foreground mb-3">Butuh bantuan akses?</p>
                         <Link
-                            href="https://wa.me/6281234567890?text=Halo%20Admin%20PRISMA,%20saya%20butuh%20bantuan%20login%20ke%20portal%20RT%2004."
+                            href="https://wa.me/6287872004448?text=Halo%20Admin%20PRISMA,%20saya%20butuh%20bantuan%20login%20ke%20portal%20RT%2004."
                             target="_blank"
                             className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white text-sm font-medium transition-all hover:scale-105 shadow-md"
                         >

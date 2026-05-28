@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,63 +12,22 @@ import {
     Search,
     Phone,
     MapPin,
-    Calendar,
-    ChevronRight
+    Calendar
 } from "lucide-react"
-
-interface WargaData {
-    id: number;
-    nama: string;
-    alamat: string;
-    status: string;
-    telepon: string;
-}
-
-interface PengurusData {
-    id: number;
-    nama: string;
-    jabatan: string;
-    periode: string;
-}
-
-interface StatistikData {
-    totalWarga: number;
-    totalKK: number;
-    wargaAktif: number;
-    pendatangBaru: number;
-}
+import { useWargaViewModel } from "@/viewmodels/useWargaViewModel"
 
 export default function AdministrasiPage() {
     const [activeTab, setActiveTab] = useState<'warga' | 'pengurus' | 'statistik'>('warga');
-    const [wargaData, setWargaData] = useState<WargaData[]>([]);
-    const [pengurusData, setPengurusData] = useState<PengurusData[]>([]);
-    const [statistikData, setStatistikData] = useState<StatistikData | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
 
-    useEffect(() => {
-        async function fetchData() {
-            try {
-                const response = await fetch('/api/database/administrasi.json');
-                const data = await response.json();
-                if (data.success) {
-                    setWargaData(data.data.warga);
-                    setPengurusData(data.data.pengurus);
-                    setStatistikData(data.data.statistik);
-                }
-            } catch (error) {
-                console.error('Failed to fetch administration data:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchData();
-    }, []);
-
-    const filteredWarga = wargaData.filter(w =>
-        w.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        w.alamat.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // ViewModel — single source of truth for warga/administrasi data
+    const {
+        filteredWarga,
+        pengurus: pengurusData,
+        statistik: statistikData,
+        isLoading: loading,
+        searchQuery,
+        handleSearch,
+    } = useWargaViewModel();
 
     const tabs = [
         { id: 'warga', label: 'Data Warga', icon: Users },
@@ -162,7 +121,7 @@ export default function AdministrasiPage() {
                                 type="text"
                                 placeholder="Cari warga berdasarkan nama atau alamat..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => handleSearch(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
                         </div>
@@ -187,7 +146,7 @@ export default function AdministrasiPage() {
                                                     <span>{warga.telepon}</span>
                                                 </div>
                                             </div>
-                                            <div className={`px-2 py-1 rounded text-xs ${warga.status === 'Aktif' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                                            <div className={`px-2 py-1 rounded text-xs ${warga.status === 'Tetap' ? 'bg-green-500/20 text-green-300' : 'bg-amber-500/20 text-amber-300'}`}>
                                                 {warga.status}
                                             </div>
                                         </div>

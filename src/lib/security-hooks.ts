@@ -42,21 +42,24 @@ export function useSecureAuth() {
 
     // Check existing session on mount
     useEffect(() => {
-        const credentials = getCredentials()
-        if (credentials && credentials.expiresAt > Date.now()) {
-            setState({
-                isAuthenticated: true,
-                user: credentials,
-                isLoading: false,
-                error: null
-            })
-            logSecurityEvent('session_restore', true)
-        } else {
-            setState(prev => ({ ...prev, isLoading: false }))
-            if (credentials) {
-                clearCredentials() // Expired session
+        const checkSession = () => {
+            const credentials = getCredentials()
+            if (credentials && credentials.expiresAt > Date.now()) {
+                setState({
+                    isAuthenticated: true,
+                    user: credentials,
+                    isLoading: false,
+                    error: null
+                })
+                logSecurityEvent('session_restore', true)
+            } else {
+                setState(prev => ({ ...prev, isLoading: false }))
+                if (credentials) {
+                    clearCredentials() // Expired session
+                }
             }
         }
+        setTimeout(checkSession, 0)
     }, [])
 
     const login = useCallback(async (
@@ -80,7 +83,7 @@ export function useSecureAuth() {
         const sanitizedPass = sanitizeInput(password)
 
         // Validate password strength for new accounts
-        const pwdStrength = validatePasswordStrength(sanitizedPass)
+        const _pwdStrength = validatePasswordStrength(sanitizedPass)
 
         try {
             setState(prev => ({ ...prev, isLoading: true, error: null }))
@@ -88,8 +91,10 @@ export function useSecureAuth() {
             // Simulated authentication - replace with actual API call
             // In production, this would be: await secureFetch('/api/auth/login', {...})
 
-            // Generate session token
-            const sessionToken = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            // SEC-007 FIX: Use CSPRNG for session token
+            const tokenBytes = new Uint8Array(32)
+            crypto.getRandomValues(tokenBytes)
+            const sessionToken = Array.from(tokenBytes, b => b.toString(16).padStart(2, '0')).join('')
 
             const credentials: SecureCredentials = {
                 userId: sanitizedId,

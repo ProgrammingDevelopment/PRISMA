@@ -1,0 +1,14 @@
+{
+  "name": "prisma-surat-service",
+  "version": "1.0.0",
+  "description": "PRISMA Surat Service — Letter template and request management",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5"
+  }
+}

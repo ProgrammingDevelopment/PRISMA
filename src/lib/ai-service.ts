@@ -4,6 +4,8 @@
  * Falls back to mock responses when backend is unavailable
  */
 
+import { sanitizeInput, sanitizeServerInput } from './security';
+
 // Types
 export interface SentimentResult {
     text: string;
@@ -55,27 +57,41 @@ const SURAT_RESPONSES: Record<string, string> = {
     'keamanan': 'Untuk Laporan Keamanan, Anda perlu mengisi: kronologi kejadian, tanggal kejadian, nama pelapor, dan nomor telepon.',
 };
 
-// API Client — Real Ollama + Mock Fallback
+// API Client — Real Groq + Mock Fallback
 class AIServiceClient {
-    private chatApiUrl = '/api/chat';
+    private get chatApiUrl(): string {
+        if (typeof window !== 'undefined') {
+            if (process.env.NEXT_PUBLIC_CHAT_API_URL) {
+                return process.env.NEXT_PUBLIC_CHAT_API_URL;
+            }
+            const gatewayUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL ?? 'http://localhost:4000/api/v1';
+            return `${gatewayUrl}/ai/chat`;
+        }
+        return '/api/chat';
+    }
 
     /**
      * Chat with PRISMA virtual assistant (Ollama AI)
      * Falls back to mock if backend is unavailable
      */
     async chat(message: string): Promise<ChatResponse> {
+        // SEC-FIX AI-1: Sanitize user input before sending to LLM
+        const sanitizedMessage = sanitizeServerInput(message, 2000);
+
         try {
             const res = await fetch(this.chatApiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message }),
+                body: JSON.stringify({ message: sanitizedMessage }),
             });
 
             if (res.ok) {
                 const data = await res.json();
+                // SEC-FIX AI-4: Sanitize LLM response to prevent stored XSS
+                const safeReply = sanitizeServerInput(data.reply || 'Tidak ada respons.', 5000);
                 return {
-                    user_input: message,
-                    response: data.reply || 'Tidak ada respons.',
+                    user_input: sanitizedMessage,
+                    response: safeReply,
                     intent: 'ai_response',
                     confidence: 0.95
                 };
@@ -85,7 +101,7 @@ class AIServiceClient {
         }
 
         // Fallback: simple keyword matching
-        return this._mockChat(message);
+        return this._mockChat(sanitizedMessage);
     }
 
     private _mockChat(message: string): ChatResponse {

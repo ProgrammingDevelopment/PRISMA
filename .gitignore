@@ -87,3 +87,17 @@ public/lighthouse-*.json
 
 # Bot temp files
 bot-temp/
+
+# Secure files
+prompt/
+docs/
+keys/
+
+# Internal prompt/documentation files (not for GitHub)
+PRISMA_PROJECT_PROMPT.md
+DEPLOY_CLOUDFLARE.md
+TESTING_REPORT.md
+CREDENTIALS.md
+datasccience prisma.txt
+*.txt
+!public/**/*.txt

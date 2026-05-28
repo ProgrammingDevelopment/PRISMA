@@ -28,6 +28,7 @@ import {
     Calculator
 } from "lucide-react"
 import { formatCurrency, calculateVariance } from "@/lib/financial-utils"
+import KeuanganLoading from "@/app/keuangan/loading"
 
 interface Transaction {
     id: string;
@@ -83,35 +84,58 @@ export default function LaporanKeuanganPage() {
     const [activeTab, setActiveTab] = useState<'bulanan' | 'analisis' | 'kesimpulan'>('bulanan');
 
     useEffect(() => {
-        async function fetchData() {
+        async function loadData() {
             try {
-                // Modified for static export - fetching JSON directly
-                const reportsRes = await fetch('/api/database/keuangan-monthly.json');
-                const reportsData = await reportsRes.json();
-                if (reportsData.success) {
-                    setReports(reportsData.data);
-                    if (reportsData.data.length > 0) {
-                        setSelectedMonth(reportsData.data[0]);
-                        setExpandedMonth(`${reportsData.data[0].bulan}-${reportsData.data[0].tahun}`);
-                        if (reportsData.data.length > 1) {
-                            setPrevMonth(reportsData.data[1]);
-                        }
+                // Use repository instead of direct JSON fetch
+                const { getKeuanganRepository } = await import('@/models/repositories/KeuanganRepository');
+                const repo = getKeuanganRepository();
+
+                const [reportEntities, expSummary] = await Promise.all([
+                    repo.getAll(),
+                    repo.getExpenseSummary(),
+                ]);
+
+                // Map entity fields (camelCase) to page's expected shape (snake_case)
+                const mappedReports: MonthlyReport[] = reportEntities.map(r => ({
+                    bulan: r.bulan,
+                    tahun: r.tahun,
+                    saldo_awal: r.saldoAwal,
+                    total_pemasukan: r.totalPemasukan,
+                    total_pengeluaran: r.totalPengeluaran,
+                    saldo_akhir: r.saldoAkhir,
+                    transaksi: r.transaksi.map(t => ({
+                        id: t.id,
+                        tanggal: t.tanggal,
+                        keterangan: t.keterangan,
+                        kategori: t.kategori,
+                        tipe: t.tipe,
+                        jumlah: t.jumlah,
+                    })),
+                }));
+
+                setReports(mappedReports);
+                if (mappedReports.length > 0) {
+                    setSelectedMonth(mappedReports[0]);
+                    setExpandedMonth(`${mappedReports[0].bulan}-${mappedReports[0].tahun}`);
+                    if (mappedReports.length > 1) {
+                        setPrevMonth(mappedReports[1]);
                     }
                 }
 
-                const expenseRes = await fetch('/api/database/keuangan-summary.json');
-                const expenseData = await expenseRes.json();
-                if (expenseData.success) {
-                    setExpenseCategories(expenseData.data.categories);
-                    setAvgExpense(expenseData.data.avgMonthlyExpense);
-                }
+                setExpenseCategories(expSummary.categories.map(c => ({
+                    kategori: c.kategori,
+                    persentase: c.persentase,
+                    avgBulanan: c.avgBulanan,
+                    keterangan: c.keterangan,
+                })));
+                setAvgExpense(expSummary.avgMonthlyExpense);
             } catch (error) {
-                console.error('Failed to fetch data:', error);
+                console.error('Failed to load data:', error);
             } finally {
                 setLoading(false);
             }
         }
-        fetchData();
+        loadData();
     }, []);
 
     // Comprehensive Financial Analysis
@@ -227,11 +251,7 @@ export default function LaporanKeuanganPage() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
+        return <KeuanganLoading />;
     }
 
     const expensesVariance = selectedMonth && prevMonth
@@ -251,7 +271,7 @@ export default function LaporanKeuanganPage() {
                     </Button>
                     <div className="flex-1">
                         <h1 className="text-3xl font-bold text-foreground">Laporan Keuangan RT 04</h1>
-                        <p className="text-muted-foreground">Transparansi pengelolaan dana warga • Periode Juli 2025 - Januari 2026</p>
+                        <p className="text-muted-foreground">Transparansi pengelolaan dana warga • Periode Juli 2025 - Maret 2026</p>
                     </div>
                 </div>
 
@@ -702,11 +722,11 @@ export default function LaporanKeuanganPage() {
                                     <FileText className="h-6 w-6 text-primary" />
                                     Ringkasan Eksekutif
                                 </CardTitle>
-                                <CardDescription>Periode Juli 2025 - Januari 2026</CardDescription>
+                                <CardDescription>Periode Juli 2025 - Maret 2026</CardDescription>
                             </CardHeader>
                             <CardContent className="prose prose-sm dark:prose-invert max-w-none">
                                 <p className="text-lg leading-relaxed">
-                                    Berdasarkan analisis data keuangan RT 04 RW 09 Kemayoran selama <strong>7 bulan</strong> terakhir,
+                                    Berdasarkan analisis data keuangan RT 04 RW 09 Kemayoran selama <strong>8 bulan</strong> terakhir,
                                     kondisi kas RT menunjukkan <strong className="text-green-600">tren positif</strong> dengan
                                     total surplus sebesar <strong>{formatCurrency(analysis.netCashFlow)}</strong>.
                                     Savings rate sebesar <strong>{analysis.savingsRate.toFixed(1)}%</strong> menunjukkan

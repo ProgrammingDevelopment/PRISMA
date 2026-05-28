@@ -2,6 +2,170 @@
     "success": true,
     "data": [
         {
+            "bulan": "Maret",
+            "tahun": 2026,
+            "saldo_awal": 50000,
+            "total_pemasukan": 2500000,
+            "total_pengeluaran": 2500000,
+            "saldo_akhir": 50000,
+            "keterangan_lpj": "Laporan Penggunaan Uang Penyelenggaraan Tugas dan Fungsi Rukun Tetangga RT004/RW09 Bulan Maret 2026 - Kelurahan Kemayoran. Ditandatangani oleh Ketua RT 004/09 Erry Adu Sundaru dan Bendahara Retno Fellyanti.",
+            "transaksi": [
+                {
+                    "id": "LPJ-MAR26-001",
+                    "tanggal": "2026-03-01",
+                    "keterangan": "Penerimaan Uang Penyelenggaraan Tugas dan Fungsi RT",
+                    "kategori": "Dana Operasional RT",
+                    "tipe": "pemasukan",
+                    "jumlah": 2500000,
+                    "noSurat": "KAS/001/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-002",
+                    "tanggal": "2026-03-05",
+                    "keterangan": "Biaya Komunikasi Ketua RT 004",
+                    "kategori": "Administratif",
+                    "tipe": "pengeluaran",
+                    "jumlah": 250000,
+                    "noSurat": "BKK/001/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-003",
+                    "tanggal": "2026-03-05",
+                    "keterangan": "Biaya Komunikasi Sekretaris",
+                    "kategori": "Administratif",
+                    "tipe": "pengeluaran",
+                    "jumlah": 250000,
+                    "noSurat": "BKK/002/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-004",
+                    "tanggal": "2026-03-05",
+                    "keterangan": "Biaya Komunikasi Bendahara",
+                    "kategori": "Administratif",
+                    "tipe": "pengeluaran",
+                    "jumlah": 250000,
+                    "noSurat": "BKK/003/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-005",
+                    "tanggal": "2026-03-05",
+                    "keterangan": "Biaya Transportasi",
+                    "kategori": "Administratif",
+                    "tipe": "pengeluaran",
+                    "jumlah": 100000,
+                    "noSurat": "BKK/004/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-006",
+                    "tanggal": "2026-03-10",
+                    "keterangan": "Biaya Wifi (Keamanan Lingkungan)",
+                    "kategori": "Keamanan",
+                    "tipe": "pengeluaran",
+                    "jumlah": 250000,
+                    "noSurat": "BKK/005/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-007",
+                    "tanggal": "2026-03-10",
+                    "keterangan": "Biaya Perawatan CCTV",
+                    "kategori": "Keamanan",
+                    "tipe": "pengeluaran",
+                    "jumlah": 250000,
+                    "noSurat": "BKK/006/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-008",
+                    "tanggal": "2026-03-15",
+                    "keterangan": "Dana Kematian",
+                    "kategori": "Sosial Masyarakat",
+                    "tipe": "pengeluaran",
+                    "jumlah": 110000,
+                    "noSurat": "BKK/007/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-009",
+                    "tanggal": "2026-03-15",
+                    "keterangan": "Dana Operasional Posyandu Balita",
+                    "kategori": "Sosial Masyarakat",
+                    "tipe": "pengeluaran",
+                    "jumlah": 35000,
+                    "noSurat": "BKK/008/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-010",
+                    "tanggal": "2026-03-15",
+                    "keterangan": "Dana Operasional Lansia",
+                    "kategori": "Sosial Masyarakat",
+                    "tipe": "pengeluaran",
+                    "jumlah": 35000,
+                    "noSurat": "BKK/009/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-011",
+                    "tanggal": "2026-03-15",
+                    "keterangan": "Dana Operasional PKK",
+                    "kategori": "Sosial Masyarakat",
+                    "tipe": "pengeluaran",
+                    "jumlah": 35000,
+                    "noSurat": "BKK/010/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-012",
+                    "tanggal": "2026-03-15",
+                    "keterangan": "Dana Operasional PAUD",
+                    "kategori": "Sosial Masyarakat",
+                    "tipe": "pengeluaran",
+                    "jumlah": 35000,
+                    "noSurat": "BKK/011/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-013",
+                    "tanggal": "2026-03-20",
+                    "keterangan": "Kontribusi Konsumsi Buka Bersama/Santunan/Halal Bihalal",
+                    "kategori": "Sosial Masyarakat",
+                    "tipe": "pengeluaran",
+                    "jumlah": 300000,
+                    "noSurat": "BKK/012/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-014",
+                    "tanggal": "2026-03-20",
+                    "keterangan": "Pembayaran ZIS (Zakat Infaq Shadaqah)",
+                    "kategori": "Sosial Masyarakat",
+                    "tipe": "pengeluaran",
+                    "jumlah": 100000,
+                    "noSurat": "BKK/013/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-015",
+                    "tanggal": "2026-03-20",
+                    "keterangan": "Pembayaran Mapgar/Baznas/Baziz",
+                    "kategori": "Sosial Masyarakat",
+                    "tipe": "pengeluaran",
+                    "jumlah": 100000,
+                    "noSurat": "BKK/014/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-016",
+                    "tanggal": "2026-03-25",
+                    "keterangan": "Siram Pohon, Sapu Jalan, Angkut Sampah",
+                    "kategori": "Kebersihan",
+                    "tipe": "pengeluaran",
+                    "jumlah": 250000,
+                    "noSurat": "BKK/015/III/2026"
+                },
+                {
+                    "id": "LPJ-MAR26-017",
+                    "tanggal": "2026-03-25",
+                    "keterangan": "Pembelian Kopi, Teh, Gula, Air Mineral",
+                    "kategori": "Operasional",
+                    "tipe": "pengeluaran",
+                    "jumlah": 150000,
+                    "noSurat": "BKK/016/III/2026"
+                }
+            ]
+        },
+        {
             "bulan": "Januari",
             "tahun": 2026,
             "saldo_awal": 3600000,
@@ -419,5 +583,5 @@
             ]
         }
     ],
-    "timestamp": "2026-01-31T00:00:00.000Z"
+    "timestamp": "2026-03-31T00:00:00.000Z"
 }

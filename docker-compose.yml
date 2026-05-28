@@ -1,0 +1,158 @@
+version: '3.9'
+
+services:
+  # ─── API Gateway ───────────────────────────────────────
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - WARGA_SERVICE_URL=http://warga-service:4001
+      - KEUANGAN_SERVICE_URL=http://keuangan-service:4002
+      - KEAMANAN_SERVICE_URL=http://keamanan-service:4003
+      - SURAT_SERVICE_URL=http://surat-service:4004
+      - AI_SERVICE_URL=http://ai-service:4005
+      - CORS_ORIGINS=http://localhost:3000,https://prisma-rt04.pages.dev
+    depends_on:
+      - warga-service
+      - keuangan-service
+      - keamanan-service
+      - surat-service
+      - ai-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - prisma-network
+
+  # ─── Domain Services ───────────────────────────────────
+  warga-service:
+    build:
+      context: ./services/warga-service
+      dockerfile: Dockerfile
+    # SEC-FIX DOCKER-1: Internal service — no host port exposure, accessible only via gateway
+    expose:
+      - "4001"
+    environment:
+      - NODE_ENV=production
+      - PORT=4001
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    volumes:
+      - warga-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - prisma-network
+
+  keuangan-service:
+    build:
+      context: ./services/keuangan-service
+      dockerfile: Dockerfile
+    # SEC-FIX DOCKER-1: Internal service — no host port exposure
+    expose:
+      - "4002"
+    environment:
+      - NODE_ENV=production
+      - PORT=4002
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    volumes:
+      - keuangan-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4002/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - prisma-network
+
+  keamanan-service:
+    build:
+      context: ./services/keamanan-service
+      dockerfile: Dockerfile
+    # SEC-FIX DOCKER-1: Internal service — no host port exposure
+    expose:
+      - "4003"
+    environment:
+      - NODE_ENV=production
+      - PORT=4003
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    volumes:
+      - keamanan-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4003/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - prisma-network
+
+  surat-service:
+    build:
+      context: ./services/surat-service
+      dockerfile: Dockerfile
+    # SEC-FIX DOCKER-1: Internal service — no host port exposure
+    expose:
+      - "4004"
+    environment:
+      - NODE_ENV=production
+      - PORT=4004
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    volumes:
+      - surat-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4004/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - prisma-network
+
+  ai-service:
+    build:
+      context: ./services/ai-service
+      dockerfile: Dockerfile
+    # SEC-FIX DOCKER-1: Internal service — no host port exposure
+    expose:
+      - "4005"
+    environment:
+      - NODE_ENV=production
+      - PORT=4005
+      - OLLAMA_API_URL=http://host.docker.internal:11434/api/chat
+      - OLLAMA_MODEL=llama3.2:1b
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4005/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - prisma-network
+
+networks:
+  prisma-network:
+    driver: bridge
+
+volumes:
+  warga-data:
+  keuangan-data:
+  keamanan-data:
+  surat-data:
